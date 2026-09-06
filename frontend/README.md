@@ -1,6 +1,6 @@
-# Ocean Insight Globe
+# seaLens — AI-Powered Maritime Domain Awareness
 
-If you're using Lovable, Bolt, v0, Cursor, Claude Code, Windsurf, Replit Agent, or any AI IDE, use a prompt like this:
+Frontend user interface and tactical visualization system for **seaLens (SIH Problem #143 NTRO)**.
 
 Sealens Landing Page Prompt
 
@@ -322,26 +322,12 @@ components/
  ├─ IntelligenceSection.tsx
  ├─ Navbar.tsx
  └─ Footer.tsx
-
-Make the final result look like a premium interactive product website where the globe visually narrates the entire Sealens workflow from data collection to vessel interception.
-
-This project was built with [Lovable](https://lovable.dev).
-
-## Build with Lovable
-
-Continue developing this project in the [Lovable editor](https://lovable.dev/projects/ba9e9adb-1e60-436f-b96e-f07514e97c9a).
-
-- **Ship faster**: describe what you want to build and Lovable handles the code.
-- **Stay in sync**: every change made in Lovable is committed straight to this repository.
-- **Full ownership**: this code is yours. Push to `main` on GitHub and your changes sync back into Lovable, ready for your next prompt.
-
 ## Development
 
-Prefer working locally? You need Node.js and npm — [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating).
+To run the frontend locally:
 
 ```sh
-git clone <this-repository-url>
-cd <repository-name>
-npm i
+cd frontend
+npm install
 npm run dev
 ```
