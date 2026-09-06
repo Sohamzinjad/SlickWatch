@@ -1,4 +1,4 @@
-# Maritime Sentinel: Current System Limitations & Engineering Gap Analysis
+# seaLens: Current System Limitations & Engineering Gap Analysis
 **SIH Problem #143 (NTRO): Oil Spill Detection via Satellite SAR & AIS Vessel Correlation**
 
 This document provides a technical audit of the current prototype, identifying what the system currently has, what it **lacks**, and the engineering roadmap required for a full enterprise/defense-grade deployment.

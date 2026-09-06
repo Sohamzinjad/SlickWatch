@@ -1,8 +1,8 @@
-# Maritime Sentinel: Oil Spill Detection & AIS Vessel Correlation System
+# seaLens: SAR Oil Spill Detection & AIS Vessel Correlation System
 **SIH Problem #143 (NTRO)**
 
 ## System Overview
-Maritime Sentinel is an AI-powered maritime environmental defense and forensic intelligence system. It pairs Synthetic Aperture Radar (SAR) satellite Earth Observation with global Automatic Identification System (AIS) vessel telemetry to detect illegal oil discharges at sea, reverse-simulate ocean drift, and correlate culprit vessels with forensic certainty.
+**seaLens** is an AI-powered maritime environmental defense and forensic intelligence system. It pairs Synthetic Aperture Radar (SAR) satellite Earth Observation with global Automatic Identification System (AIS) vessel telemetry to detect illegal oil discharges at sea, reverse-simulate ocean drift, and correlate culprit vessels with forensic certainty.
 
 ### Key Capabilities
 1. **SAR Oil Slick Segmentation Engine**: Uses polarimetric SAR features (VV/VH ratio, speckle suppression, entropy) + deep convolutional segmentation (U-Net / SegFormer) to delineate slick contours and calculate spill volume/area.

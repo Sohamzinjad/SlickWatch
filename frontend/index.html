@@ -1,1116 +1,1738 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Maritime Sentinel // Tactical SAR & AIS Forensic Intelligence C2</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sealens — AI-Powered Maritime Domain Awareness</title>
+  <meta name="description" content="Sealens integrates Sentinel-1 SAR imagery, AIS feeds, and environmental intelligence to detect suspicious maritime activity, identify dark vessels, assess risks, and generate actionable insights." />
   
-  <!-- Tailwind CSS CDN -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Lucide Icons -->
-  <script src="https://unpkg.com/lucide@latest"></script>
-  <!-- Leaflet CSS & JS -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <!-- Google Fonts -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-
-  <script>
-    tailwind.config = {
-      darkMode: 'class',
-      theme: {
-        extend: {
-          fontFamily: {
-            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
-            mono: ['"JetBrains Mono"', 'monospace'],
-          },
-          colors: {
-            c2: {
-              950: '#040711',
-              900: '#070D1E',
-              850: '#0B152E',
-              800: '#101F42',
-              750: '#172B59',
-              700: '#1E3770',
-              600: '#2A4D9B',
-            },
-            accent: {
-              cyan: '#06B6D4',
-              teal: '#14B8A6',
-              red: '#EF4444',
-              rose: '#F43F5E',
-              amber: '#F59E0B',
-              emerald: '#10B981',
-              purple: '#A855F7',
-              magenta: '#D946EF'
-            }
-          }
-        }
-      }
-    }
-  </script>
+  <!-- Modern Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Inter+Tight:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  
+  <!-- GSAP + ScrollTrigger -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
 
   <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #ECECEC;
+      --surface: #FFFFFF;
+      --surface-2: #F5F5F5;
+      --surface-card: rgba(255, 255, 255, 0.94);
+      --border: rgba(0, 0, 0, 0.08);
+      --border-strong: rgba(0, 0, 0, 0.14);
+      --text-primary: #0A0A0A;
+      --text-secondary: #525252;
+      --text-tertiary: #8A8A8A;
+      --blue: #2563EB;
+      --blue-light: rgba(37, 99, 235, 0.08);
+      --blue-mid: rgba(37, 99, 235, 0.16);
+      --blue-glow: rgba(37, 99, 235, 0.35);
+      --red: #DC2626;
+      --red-light: rgba(220, 38, 38, 0.08);
+      --amber: #D97706;
+      --emerald: #10B981;
+      --shadow-sm: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+      --shadow-md: 0 4px 16px rgba(0,0,0,0.06), 0 2px 8px rgba(0,0,0,0.04);
+      --shadow-lg: 0 14px 44px rgba(0,0,0,0.09), 0 4px 16px rgba(0,0,0,0.05);
+      --radius: 14px;
+      --radius-lg: 20px;
+    }
+
+    html { scroll-behavior: smooth; }
+
     body {
-      background-color: #040711;
-      color: #E2E8F0;
-      overflow: hidden;
+      font-family: 'Inter Tight', 'Plus Jakarta Sans', sans-serif;
+      background: var(--bg);
+      color: var(--text-primary);
+      line-height: 1.6;
     }
-    .leaflet-container {
-      background-color: #070D1E !important;
-      font-family: 'Plus Jakarta Sans', sans-serif !important;
+
+    /* ─── SCROLLBAR ─── */
+    ::-webkit-scrollbar { width: 5px; }
+    ::-webkit-scrollbar-track { background: #E2E2E2; }
+    ::-webkit-scrollbar-thumb { background: #BDBDBD; border-radius: 4px; }
+
+    /* ─── NAVIGATION ─── */
+    nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 100;
+      height: 64px;
+      background: rgba(236, 236, 236, 0.88);
+      backdrop-filter: blur(20px) saturate(180%);
+      -webkit-backdrop-filter: blur(20px) saturate(180%);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      padding: 0 48px;
     }
-    .custom-scrollbar::-webkit-scrollbar {
-      width: 5px;
-      height: 5px;
+    .nav-logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 16px;
+      font-weight: 700;
+      letter-spacing: -0.3px;
+      color: var(--text-primary);
+      text-decoration: none;
+      margin-right: auto;
     }
-    .custom-scrollbar::-webkit-scrollbar-track {
-      background: rgba(7, 13, 30, 0.6);
+    .nav-logo svg { width: 24px; height: 24px; }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 28px;
+      list-style: none;
     }
-    .custom-scrollbar::-webkit-scrollbar-thumb {
-      background: #1E3770;
-      border-radius: 4px;
+    .nav-links a {
+      font-size: 13.5px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      text-decoration: none;
+      transition: color 0.2s;
     }
-    .pulse-glow-red {
-      animation: pulse-red-anim 2s infinite;
+    .nav-links a:hover { color: var(--text-primary); }
+    .nav-cta {
+      margin-left: 20px;
+      background: var(--text-primary);
+      color: #fff !important;
+      font-size: 13px !important;
+      font-weight: 600 !important;
+      padding: 9px 20px;
+      border-radius: 100px;
+      transition: opacity 0.2s, transform 0.2s !important;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
     }
-    @keyframes pulse-red-anim {
-      0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
-      70% { box-shadow: 0 0 0 14px rgba(239, 68, 68, 0); }
-      100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+    .nav-cta:hover { opacity: 0.9; transform: scale(1.02); }
+
+    /* ─── LIVE TELEMETRY TICKER ─── */
+    .telemetry-ticker {
+      background: rgba(255, 255, 255, 0.8);
+      border-bottom: 1px solid var(--border);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10.5px;
+      padding: 4px 48px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      color: var(--text-secondary);
+      position: fixed;
+      top: 64px;
+      left: 0;
+      right: 0;
+      z-index: 90;
+      backdrop-filter: blur(10px);
     }
-    .pulse-glow-purple {
-      animation: pulse-purple-anim 2s infinite;
+    .ticker-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
     }
-    @keyframes pulse-purple-anim {
-      0% { box-shadow: 0 0 0 0 rgba(217, 70, 239, 0.7); }
-      70% { box-shadow: 0 0 0 14px rgba(217, 70, 239, 0); }
-      100% { box-shadow: 0 0 0 0 rgba(217, 70, 239, 0); }
+    .ticker-pulse {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: #10B981;
+      animation: blink 1.5s infinite;
     }
-    .glass-panel {
-      background: rgba(11, 21, 46, 0.75);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
-      border: 1px solid rgba(30, 55, 112, 0.6);
+
+    /* ─── SCROLL PROGRESS BAR ─── */
+    #progress-bar {
+      position: fixed;
+      top: 88px; left: 0;
+      height: 2px;
+      background: var(--blue);
+      z-index: 99;
+      transform-origin: left;
+      transform: scaleX(0);
     }
-    .hud-border {
+
+    /* ─── CONNECTED STORYLINE RAIL WITH VERTICAL SPINE ─── */
+    .section-dots {
+      position: fixed;
+      right: 32px;
+      top: 50%;
+      transform: translateY(-50%);
+      z-index: 50;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      align-items: center;
+    }
+    .rail-spine {
+      position: absolute;
+      top: 8px; bottom: 8px;
+      left: 50%;
+      width: 1.5px;
+      background: rgba(0,0,0,0.1);
+      transform: translateX(-50%);
+      z-index: 1;
+    }
+    .rail-spine-fill {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%;
+      height: 0%;
+      background: var(--blue);
+      transition: height 0.3s;
+    }
+    .dot-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      position: relative;
+      z-index: 2;
+    }
+    .dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: #D4D4D4;
+      border: 2px solid var(--bg);
+      transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .dot-item.active .dot {
+      background: var(--blue);
+      box-shadow: 0 0 0 4px var(--blue-mid);
+      transform: scale(1.3);
+    }
+    .dot-label {
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: var(--text-tertiary);
+      opacity: 0;
+      transform: translateX(4px);
+      transition: all 0.25s;
+      white-space: nowrap;
+    }
+    .dot-item.active .dot-label {
+      opacity: 1;
+      transform: translateX(0);
+      color: var(--blue);
+    }
+
+    /* ─── UNIFIED 2-COLUMN LAYOUT ─── */
+    .page-wrapper {
+      padding-top: 88px;
       position: relative;
     }
-    .hud-border::before {
-      content: '';
+
+    .page-layout-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr);
+      max-width: 1440px;
+      margin: 0 auto;
+      position: relative;
+    }
+
+    /* LEFT COLUMN — ALL 5 SECTIONS */
+    .sections-column {
+      position: relative;
+      z-index: 2;
+      width: 100%;
+    }
+
+    .story-section {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 80px 36px 80px 64px;
+      position: relative;
+    }
+
+    /* RIGHT COLUMN — FIXED PERSISTENT GLOBE */
+    .globe-column {
+      position: relative;
+      height: 100%;
+    }
+    .globe-sticky {
+      position: fixed;
+      top: 88px;
+      right: max(0px, calc((100vw - 1440px) / 2));
+      width: min(52vw, 740px);
+      height: calc(100vh - 88px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: visible;
+      pointer-events: none;
+      z-index: 10;
+    }
+
+    /* ─── SECTION LABELS ─── */
+    .section-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--blue);
+      margin-bottom: 20px;
+      opacity: 0;
+      transform: translateY(16px);
+    }
+    .section-label-num {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 22px; height: 22px;
+      border-radius: 50%;
+      background: var(--blue-light);
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--blue);
+    }
+
+    /* ─── HERO ─── */
+    .hero-eyebrow {
+      font-size: 11.5px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--blue);
+      margin-bottom: 16px;
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    .hero-title {
+      font-size: 68px;
+      font-weight: 800;
+      line-height: 0.98;
+      letter-spacing: -2.5px;
+      color: var(--text-primary);
+      margin-bottom: 12px;
+      opacity: 0;
+      transform: translateY(30px);
+    }
+    .hero-subtitle {
+      font-size: 24px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      color: var(--text-secondary);
+      margin-bottom: 24px;
+      opacity: 0;
+      transform: translateY(24px);
+    }
+    .hero-desc {
+      font-size: 15.5px;
+      line-height: 1.7;
+      color: var(--text-secondary);
+      max-width: 480px;
+      margin-bottom: 36px;
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    .hero-buttons {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 48px;
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    .btn-primary {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--text-primary);
+      color: #fff;
+      font-size: 14px;
+      font-weight: 600;
+      padding: 13px 26px;
+      border-radius: 100px;
+      text-decoration: none;
+      transition: opacity 0.2s, transform 0.2s, box-shadow 0.2s;
+      cursor: pointer;
+      border: none;
+    }
+    .btn-primary:hover { opacity: 0.9; transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.12); }
+    
+    .btn-secondary {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--surface);
+      color: var(--text-primary);
+      font-size: 14px;
+      font-weight: 600;
+      padding: 13px 24px;
+      border-radius: 100px;
+      text-decoration: none;
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow-sm);
+      transition: background 0.2s, transform 0.2s;
+      cursor: pointer;
+    }
+    .btn-secondary:hover { background: #FAFAFA; transform: translateY(-2px); }
+
+    /* ─── METRICS ─── */
+    .hero-metrics {
+      display: flex;
+      gap: 40px;
+      opacity: 0;
+      transform: translateY(20px);
+      padding-top: 32px;
+      border-top: 1px solid var(--border);
+    }
+    .metric-value {
+      font-size: 24px;
+      font-weight: 800;
+      letter-spacing: -1px;
+      color: var(--text-primary);
+      display: block;
+    }
+    .metric-label {
+      font-size: 12px;
+      color: var(--text-tertiary);
+      font-weight: 500;
+    }
+
+    /* ─── SECTION HEADING ─── */
+    .section-title {
+      font-size: 44px;
+      font-weight: 800;
+      letter-spacing: -1.5px;
+      line-height: 1.1;
+      color: var(--text-primary);
+      margin-bottom: 16px;
+      opacity: 0;
+      transform: translateY(24px);
+    }
+    .section-desc {
+      font-size: 15px;
+      line-height: 1.7;
+      color: var(--text-secondary);
+      max-width: 440px;
+      margin-bottom: 32px;
+      opacity: 0;
+      transform: translateY(16px);
+    }
+
+    /* ─── CARDS GRID ─── */
+    .cards-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 32px;
+    }
+    .input-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px 20px;
+      box-shadow: var(--shadow-sm);
+      opacity: 0;
+      transform: translateY(20px);
+      transition: box-shadow 0.2s, transform 0.2s;
+    }
+    .input-card:hover {
+      box-shadow: var(--shadow-md);
+      transform: translateY(-2px);
+    }
+    .card-icon {
+      width: 32px; height: 32px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 12px;
+      font-size: 16px;
+    }
+    .card-icon.blue { background: var(--blue-light); color: var(--blue); }
+    .card-icon.grey { background: rgba(0,0,0,0.05); color: var(--text-secondary); }
+    .card-title {
+      font-size: 13.5px;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 4px;
+    }
+    .card-sub {
+      font-size: 11.5px;
+      color: var(--text-tertiary);
+      line-height: 1.5;
+    }
+
+    /* ─── INTERACTIVE SAR SPLIT-SCREEN COMPARISON LENS ─── */
+    .sar-lens-container {
+      position: relative;
+      width: 100%;
+      height: 180px;
+      border-radius: var(--radius);
+      overflow: hidden;
+      border: 1px solid var(--border);
+      background: #111;
+      margin-bottom: 24px;
+      user-select: none;
+      box-shadow: var(--shadow-sm);
+    }
+    .sar-layer {
       position: absolute;
-      top: 0; left: 0; width: 6px; height: 6px;
-      border-top: 2px solid #06B6D4;
-      border-left: 2px solid #06B6D4;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
     }
-    .hud-border::after {
-      content: '';
+    .sar-before {
+      background: radial-gradient(circle at 50% 50%, #2A3038 0%, #151A20 100%);
+      color: #94A3B8;
+    }
+    .sar-after {
+      background: radial-gradient(circle at 50% 50%, #1E293B 0%, #0F172A 100%);
+      color: #38BDF8;
+      clip-path: polygon(0 0, 50% 0, 50% 100%, 0 100%);
+    }
+    .sar-divider {
       position: absolute;
-      bottom: 0; right: 0; width: 6px; height: 6px;
-      border-bottom: 2px solid #06B6D4;
-      border-right: 2px solid #06B6D4;
+      top: 0; bottom: 0;
+      left: 50%;
+      width: 2px;
+      background: #fff;
+      cursor: ew-resize;
+      box-shadow: 0 0 12px rgba(255,255,255,0.8);
     }
-    .glow-text-cyan {
-      text-shadow: 0 0 10px rgba(6, 182, 212, 0.6);
+    .sar-handle {
+      position: absolute;
+      top: 50%; left: 50%;
+      width: 32px; height: 32px;
+      border-radius: 50%;
+      background: #fff;
+      border: 2px solid var(--blue);
+      transform: translate(-50%, -50%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      font-weight: bold;
+      color: var(--blue);
+      box-shadow: var(--shadow-md);
+      cursor: ew-resize;
     }
-    .glow-text-rose {
-      text-shadow: 0 0 10px rgba(244, 63, 94, 0.6);
+
+    /* ─── PIPELINE / FLOW ─── */
+    .pipeline {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 24px;
+      opacity: 0;
+      transform: translateY(16px);
+      flex-wrap: wrap;
     }
-    .radar-sweep {
-      background: conic-gradient(from 0deg at 50% 50%, rgba(6, 182, 212, 0.3) 0deg, rgba(6, 182, 212, 0) 60deg, rgba(6, 182, 212, 0) 360deg);
-      animation: spin 4s linear infinite;
+    .pipe-step {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 8px 14px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      box-shadow: var(--shadow-sm);
     }
-    @keyframes spin {
-      from { transform: rotate(0deg); }
-      to { transform: rotate(360deg); }
+    .pipe-arrow {
+      font-size: 14px;
+      color: var(--text-tertiary);
+    }
+    .pipe-step.highlight {
+      background: var(--blue);
+      color: #fff;
+      border-color: var(--blue);
+    }
+
+    /* ─── FEATURE LIST ─── */
+    .feature-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      opacity: 0;
+      transform: translateY(16px);
+    }
+    .feature-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 13.5px;
+      font-weight: 500;
+      color: var(--text-secondary);
+    }
+    .feature-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--blue);
+      flex-shrink: 0;
+    }
+
+    /* ─── FUSION FLOW ─── */
+    .fusion-layout {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      gap: 14px;
+      align-items: center;
+      margin-bottom: 28px;
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    .fusion-inputs, .fusion-outputs { display: flex; flex-direction: column; gap: 8px; }
+    .fusion-item {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 12px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: var(--shadow-sm);
+      transition: all 0.2s;
+    }
+    .fusion-item:hover {
+      border-color: var(--blue);
+      transform: translateX(2px);
+    }
+    .fusion-item-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .fusion-engine {
+      background: var(--text-primary);
+      color: #fff;
+      border-radius: 12px;
+      padding: 20px 16px;
+      text-align: center;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      box-shadow: var(--shadow-md);
+      min-width: 90px;
+      position: relative;
+    }
+    .fusion-engine-icon {
+      font-size: 20px;
+      display: block;
+      margin-bottom: 6px;
+    }
+
+    /* ─── ACTION CARDS ─── */
+    .action-cards {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+    .action-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 24px;
+      box-shadow: var(--shadow-sm);
+      opacity: 0;
+      transform: translateY(20px);
+      transition: box-shadow 0.2s, transform 0.2s;
+    }
+    .action-card:hover {
+      box-shadow: var(--shadow-lg);
+      transform: translateY(-2px);
+    }
+    .action-card-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 12px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+    .action-card-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .action-card-list li {
+      font-size: 12px;
+      color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 500;
+    }
+    .action-card-list li::before {
+      content: '';
+      width: 4px; height: 4px;
+      border-radius: 50%;
+      background: var(--blue);
+      flex-shrink: 0;
+    }
+
+
+
+    /* ─── GLOBE SVG CONTAINER ─── */
+    #globe-svg-wrapper {
+      position: relative;
+      width: 540px;
+      height: 540px;
+      pointer-events: auto;
+    }
+    #globe-svg {
+      width: 100%;
+      height: 100%;
+      overflow: visible;
+      filter: drop-shadow(0 26px 54px rgba(0,0,0,0.12));
+      transform-origin: 310px 310px;
+    }
+    @keyframes worldStripScroll {
+      0% { transform: translateX(0px); }
+      100% { transform: translateX(-881.6px); }
+    }
+    .world-strip-rotator {
+      animation: worldStripScroll 75s linear infinite;
+    }
+
+    /* Floating overlay cards on globe */
+    .globe-card {
+      position: absolute;
+      background: rgba(255,255,255,0.96);
+      backdrop-filter: blur(16px);
+      border: 1px solid var(--border-strong);
+      border-radius: var(--radius);
+      padding: 13px 18px;
+      box-shadow: var(--shadow-lg);
+      font-size: 12px;
+      min-width: 190px;
+      opacity: 0;
+      transform: scale(0.9) translateY(8px);
+      transition: opacity 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+      pointer-events: auto;
+      z-index: 20;
+    }
+    .globe-card-title {
+      font-size: 10.5px;
+      font-weight: 700;
+      letter-spacing: 0.6px;
+      text-transform: uppercase;
+      color: var(--text-tertiary);
+      margin-bottom: 5px;
+    }
+    .globe-card-value {
+      font-size: 14px;
+      font-weight: 800;
+      color: var(--text-primary);
+      margin-bottom: 4px;
+      letter-spacing: -0.3px;
+    }
+    .globe-card-sub {
+      font-size: 11px;
+      color: var(--text-tertiary);
+    }
+    .globe-card-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 10.5px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 20px;
+    }
+    .badge-red { background: rgba(220,38,38,0.08); color: var(--red); }
+    .badge-blue { background: var(--blue-light); color: var(--blue); }
+    .badge-amber { background: rgba(217,119,6,0.08); color: #D97706; }
+
+    /* Interactive Vessel Tooltip */
+    #vessel-tooltip {
+      position: absolute;
+      background: rgba(10, 10, 10, 0.92);
+      backdrop-filter: blur(10px);
+      color: #fff;
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-size: 10px;
+      font-family: 'JetBrains Mono', monospace;
+      pointer-events: none;
+      z-index: 30;
+      opacity: 0;
+      transform: translate(-50%, -120%);
+      transition: opacity 0.2s, transform 0.2s;
+      white-space: nowrap;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    }
+
+    /* Globe status bar */
+    .globe-status {
+      position: absolute;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(255,255,255,0.95);
+      backdrop-filter: blur(16px);
+      border: 1px solid var(--border);
+      border-radius: 100px;
+      padding: 7px 20px;
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      opacity: 0;
+      transform: translateX(-50%) translateY(8px);
+      transition: opacity 0.4s, transform 0.4s;
+      white-space: nowrap;
+      box-shadow: var(--shadow-sm);
+    }
+    .status-dot {
+      width: 6.5px; height: 6.5px;
+      border-radius: 50%;
+      background: #10B981;
+      animation: blink 1.5s ease-in-out infinite;
+    }
+    @keyframes blink {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.85); }
+    }
+
+    /* ─── FOOTER ─── */
+    footer {
+      padding: 48px 80px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--bg);
+    }
+    .footer-logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+    .footer-links { display: flex; gap: 32px; }
+    .footer-links a {
+      font-size: 13px;
+      color: var(--text-tertiary);
+      text-decoration: none;
+      font-weight: 500;
+      transition: color 0.2s;
+    }
+    .footer-links a:hover { color: var(--text-primary); }
+
+    .mono { font-family: 'JetBrains Mono', 'IBM Plex Mono', monospace; }
+    .globe-layer { transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1); }
+
+    /* Animated current particles */
+    .streamlet {
+      animation: streamFlow 3.5s linear infinite;
+    }
+    @keyframes streamFlow {
+      0% { stroke-dashoffset: 24; opacity: 0.2; }
+      50% { opacity: 0.7; }
+      100% { stroke-dashoffset: -24; opacity: 0.2; }
+    }
+
+    /* Phased Array Radar Pulse */
+    .radar-pulse-ring {
+      animation: radarExpand 2.4s infinite ease-out;
+      transform-origin: 202px 145px;
+    }
+    @keyframes radarExpand {
+      0% { r: 10; opacity: 0.8; }
+      100% { r: 120; opacity: 0; }
     }
   </style>
 </head>
-<body class="h-screen w-screen flex flex-col font-sans select-none antialiased">
+<body>
 
-  <!-- TOP COMMAND & CONTROL INTELLIGENCE BAR -->
-  <header class="h-16 bg-c2-900 border-b border-c2-800 px-5 flex items-center justify-between shrink-0 z-30 shadow-xl">
-    
-    <!-- Branding & Live Pulse -->
-    <div class="flex items-center space-x-3.5">
-      <div class="relative w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-600 via-blue-600 to-indigo-700 p-0.5 shadow-lg shadow-cyan-500/20 flex items-center justify-center overflow-hidden">
-        <div class="absolute inset-0 radar-sweep rounded-xl"></div>
-        <i data-lucide="shield" class="w-5 h-5 text-white relative z-10"></i>
-      </div>
-      <div>
-        <div class="flex items-center space-x-2">
-          <h1 class="text-base font-extrabold tracking-tight text-white flex items-center space-x-1.5">
-            <span>MARITIME SENTINEL</span>
-            <span class="text-cyan-400 font-mono text-xs font-semibold glow-text-cyan">C2</span>
-          </h1>
-          <span class="px-2 py-0.5 text-[9px] font-mono font-bold bg-cyan-950/80 text-cyan-400 border border-cyan-700/60 rounded-full tracking-wider">NTRO-143</span>
-        </div>
-        <div class="flex items-center space-x-2 text-[10px] text-slate-400 font-mono">
-          <span class="flex items-center text-emerald-400 font-semibold"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse mr-1"></span>SAR+AIS ACTIVE</span>
-          <span>•</span>
-          <span id="liveClockUtc" class="text-slate-300">06:00:00 UTC</span>
-        </div>
-      </div>
-    </div>
+<!-- ──────────────────────── NAVIGATION ──────────────────────── -->
+<nav>
+  <a href="#section-1" class="nav-logo">
+    <svg viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="14" cy="14" r="12" stroke="#2563EB" stroke-width="2"/>
+      <ellipse cx="14" cy="14" rx="5" ry="12" stroke="#2563EB" stroke-width="1.5"/>
+      <path d="M3 14h22" stroke="#2563EB" stroke-width="1.5"/>
+      <circle cx="14" cy="10" r="2.5" fill="#2563EB"/>
+    </svg>
+    Sealens
+  </a>
+  <ul class="nav-links">
+    <li><a href="#section-1">Technology</a></li>
+    <li><a href="#section-2">Data Ingestion</a></li>
+    <li><a href="#section-3">Detection</a></li>
+    <li><a href="#section-4">AI Fusion</a></li>
+    <li><a href="/c2" style="font-weight: 700; color: #2563EB;">Live C2 Console</a></li>
+    <li><a href="/c2" class="nav-cta">Launch C2 Platform →</a></li>
+  </ul>
+</nav>
 
-    <!-- Scenario Selector & Tactical Action Buttons -->
-    <div class="flex items-center space-x-2.5">
+<!-- ──────────────────────── LIVE TELEMETRY TICKER ──────────────────────── -->
+<div class="telemetry-ticker">
+  <div class="ticker-pill">
+    <span class="ticker-pulse"></span>
+    <span>CONSTELLATION: SENTINEL-1A/B (VV+VH)</span>
+  </div>
+  <div class="ticker-pill">
+    <span>LATENCY: <b>38ms</b></span>
+  </div>
+  <div class="ticker-pill">
+    <span>LOOKALIKES FILTERED: <b>14/14</b></span>
+  </div>
+  <div class="ticker-pill">
+    <span>PEAK CONFIDENCE: <b style="color:#2563EB;">96.8%</b></span>
+  </div>
+</div>
+
+<div id="progress-bar"></div>
+
+<!-- ──────────────────────── CONNECTED STORYLINE RAIL ──────────────────────── -->
+<div class="section-dots">
+  <div class="rail-spine">
+    <div class="rail-spine-fill" id="rail-fill"></div>
+  </div>
+  <div class="dot-item active" data-section="1">
+    <div class="dot"></div>
+    <div class="dot-label">Overview</div>
+  </div>
+  <div class="dot-item" data-section="2">
+    <div class="dot"></div>
+    <div class="dot-label">Inputs</div>
+  </div>
+  <div class="dot-item" data-section="3">
+    <div class="dot"></div>
+    <div class="dot-label">Detection</div>
+  </div>
+  <div class="dot-item" data-section="4">
+    <div class="dot"></div>
+    <div class="dot-label">Analytics</div>
+  </div>
+  <div class="dot-item" data-section="5">
+    <div class="dot"></div>
+    <div class="dot-label">Action</div>
+  </div>
+</div>
+
+<!-- ──────────────────────── PAGE CONTENT ──────────────────────── -->
+<div class="page-wrapper">
+
+  <!-- UNIFIED 2-COLUMN STORYTELLING GRID -->
+  <main class="page-layout-grid">
+
+    <!-- ─── LEFT COLUMN: ALL 5 SECTIONS ─── -->
+    <div class="sections-column">
       
-      <!-- Scenario Selector -->
-      <div class="flex items-center bg-c2-850 border border-c2-750 rounded-xl px-2.5 py-1 text-xs">
-        <i data-lucide="crosshair" class="w-3.5 h-3.5 text-cyan-400 mr-2"></i>
-        <select id="scenarioSelect" class="bg-transparent text-xs text-slate-100 font-medium focus:outline-none cursor-pointer pr-2">
-          <option value="scenario_alpha_rogue_tanker">Scenario Alpha: The Rogue Tanker (Arabian Sea)</option>
-          <option value="scenario_beta_singapore_strait">Scenario Beta: Multi-Vessel Confluence (Singapore)</option>
-          <option value="scenario_gamma_lookalike">Scenario Gamma: Look-Alike False Alarm (Bay of Bengal)</option>
-        </select>
-      </div>
-
-      <!-- Action Button 1: 72h Forward Drift & Landfall Impact -->
-      <button id="btnForwardDrift" class="flex items-center space-x-1.5 px-3 py-1.5 bg-gradient-to-r from-purple-600 to-fuchsia-600 hover:from-purple-500 hover:to-fuchsia-500 text-white rounded-xl text-xs font-semibold shadow-lg shadow-purple-600/20 border border-purple-400/30 transition-all hover:scale-[1.02] active:scale-95">
-        <i data-lucide="compass" class="w-3.5 h-3.5"></i>
-        <span>72h Landfall & Weathering</span>
-      </button>
-
-      <!-- Action Button 2: Run GeoTIFF Neural Inference -->
-      <button id="btnGeoTIFF" class="flex items-center space-x-1.5 px-3 py-1.5 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white rounded-xl text-xs font-semibold shadow-lg shadow-cyan-600/20 border border-cyan-400/30 transition-all hover:scale-[1.02] active:scale-95">
-        <i data-lucide="scan" class="w-3.5 h-3.5"></i>
-        <span>Run GeoTIFF + CFAR</span>
-      </button>
-
-      <!-- Action Button 3: Forensic Dossier -->
-      <button id="btnDossier" class="flex items-center space-x-1.5 px-3 py-1.5 bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-500 hover:to-red-500 text-white rounded-xl text-xs font-semibold shadow-lg shadow-rose-600/20 border border-rose-400/30 transition-all hover:scale-[1.02] active:scale-95">
-        <i data-lucide="file-text" class="w-3.5 h-3.5"></i>
-        <span>Forensic Dossier</span>
-      </button>
-    </div>
-
-    <!-- Quick Stats Telemetry Badges -->
-    <div class="hidden xl:flex items-center space-x-3 text-xs font-mono">
-      <div class="flex items-center space-x-2 bg-c2-950 px-3 py-1.5 rounded-xl border border-c2-800">
-        <i data-lucide="satellite" class="w-3.5 h-3.5 text-cyan-400"></i>
-        <span class="text-slate-400">Constellation:</span>
-        <span class="text-cyan-300 font-semibold">Sentinel-1 (VV+VH)</span>
-      </div>
-      <div class="flex items-center space-x-2 bg-c2-950 px-3 py-1.5 rounded-xl border border-c2-800">
-        <i data-lucide="eye" class="w-3.5 h-3.5 text-emerald-400"></i>
-        <span class="text-slate-400">Tracked Targets:</span>
-        <span id="trackedTargetsBadge" class="text-emerald-300 font-semibold">3 AIS // 1 Dark</span>
-      </div>
-    </div>
-  </header>
-
-  <!-- MAIN MULTI-PANEL WORKSPACE -->
-  <main class="flex-1 flex overflow-hidden relative">
-
-    <!-- LEFT INTELLIGENCE DRAWER (Tabbed for Maximum Clarity) -->
-    <aside class="w-80 lg:w-96 bg-c2-900/95 backdrop-blur-xl border-r border-c2-800 flex flex-col shrink-0 z-20 overflow-hidden shadow-2xl">
-      
-      <!-- Incident Surveillance Zone Banner -->
-      <div class="p-4 border-b border-c2-800 bg-gradient-to-b from-c2-950/80 to-transparent">
-        <div class="flex items-center justify-between mb-1.5">
-          <span class="text-[10px] font-mono text-cyan-400 uppercase tracking-widest font-bold flex items-center">
-            <span class="w-1.5 h-1.5 bg-cyan-400 rounded-full mr-1.5 animate-ping"></span>
-            SECTOR INTELLIGENCE
-          </span>
-          <span id="incidentStatusBadge" class="px-2 py-0.5 text-[9px] font-mono font-bold rounded-md uppercase bg-rose-950 text-rose-400 border border-rose-800">VERIFIED SPILL</span>
+      <!-- ─── SECTION 1: HERO ─── -->
+      <section id="section-1" class="story-section">
+        <p class="hero-eyebrow" id="eyebrow-1">AI-Powered Maritime Domain Awareness</p>
+        <h1 class="hero-title" id="hero-title">SEALENS</h1>
+        <p class="hero-subtitle" id="hero-subtitle">See a Safer Ocean World</p>
+        <p class="hero-desc" id="hero-desc">
+          Sealens integrates Sentinel-1 SAR imagery, AIS feeds, and environmental intelligence to detect suspicious maritime activity, identify dark vessels, assess risks, and generate actionable maritime insights.
+        </p>
+        <div class="hero-buttons" id="hero-btns">
+          <a href="/c2" class="btn-primary">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="6" stroke="white" stroke-width="1.5"/><path d="M5 7h4M7 5l2 2-2 2" stroke="white" stroke-width="1.5" stroke-linecap="round"/></svg>
+            Launch C2 Platform
+          </a>
+          <a href="#section-2" class="btn-secondary">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="6" stroke="#0A0A0A" stroke-width="1.5"/><path d="M5.5 5.5l3 1.5-3 1.5V5.5z" fill="#0A0A0A"/></svg>
+            Explore Intelligence
+          </a>
         </div>
-        <h2 id="regionName" class="text-base font-bold text-white leading-tight">Loading sector...</h2>
-        <p id="scenarioDesc" class="text-[11px] text-slate-400 mt-1 leading-relaxed line-clamp-2">...</p>
-      </div>
+        <div class="hero-metrics" id="hero-metrics">
+          <div class="metric-item">
+            <span class="metric-value counter" data-target="200" data-suffix="M+">0M+</span>
+            <span class="metric-label">km² ocean coverage</span>
+          </div>
+          <div class="metric-item">
+            <span class="metric-value">Real-time</span>
+            <span class="metric-label">Vessel tracking</span>
+          </div>
+          <div class="metric-item">
+            <span class="metric-value">AI-powered</span>
+            <span class="metric-label">Actionable intelligence</span>
+          </div>
+        </div>
+      </section>
 
-      <!-- Tab Navigation Switcher -->
-      <div class="grid grid-cols-3 border-b border-c2-800 bg-c2-950 text-[11px] font-mono font-semibold">
-        <button id="tabBtnSAR" class="py-2.5 text-center text-cyan-400 border-b-2 border-cyan-400 bg-c2-900/60 transition-all flex items-center justify-center space-x-1">
-          <i data-lucide="satellite" class="w-3.5 h-3.5"></i>
-          <span>SAR AI</span>
-        </button>
-        <button id="tabBtnPhysics" class="py-2.5 text-center text-slate-400 hover:text-slate-200 transition-all flex items-center justify-center space-x-1">
-          <i data-lucide="wind" class="w-3.5 h-3.5"></i>
-          <span>Physics</span>
-        </button>
-        <button id="tabBtnThreat" class="py-2.5 text-center text-slate-400 hover:text-slate-200 transition-all flex items-center justify-center space-x-1">
-          <i data-lucide="alert-triangle" class="w-3.5 h-3.5"></i>
-          <span>Threat</span>
-        </button>
-      </div>
+      <!-- ─── SECTION 2: MULTI-SOURCE INPUTS ─── -->
+      <section id="section-2" class="story-section">
+        <div class="section-label" id="label-2">
+          <span class="section-label-num">02</span>
+          Multi-Source Inputs
+        </div>
+        <h2 class="section-title" id="title-2">Multi-Source<br>Inputs</h2>
+        <p class="section-desc" id="desc-2">Combining diverse maritime datasets into a unified operational picture — from high-resolution radar to oceanographic drift modeling.</p>
 
-      <!-- TAB 1 CONTENT: SAR SATELLITE EARTH OBSERVATION -->
-      <div id="tabContentSAR" class="flex-1 p-4 space-y-3.5 overflow-y-auto custom-scrollbar">
-        
-        <!-- SAR Metric Tiles -->
-        <div class="grid grid-cols-2 gap-2 text-xs">
-          <div class="glass-panel p-2.5 rounded-xl hud-border">
-            <span class="text-[10px] font-mono text-slate-400 uppercase block">Sensor / Orbit</span>
-            <span id="sarSensor" class="font-mono text-slate-100 font-bold text-xs">Sentinel-1A</span>
+        <div class="cards-grid" id="cards-2">
+          <div class="input-card">
+            <div class="card-icon blue">🛰️</div>
+            <div class="card-title">Sentinel-1 SAR</div>
+            <div class="card-sub">High-resolution C-Band radar imagery · 10m resolution · All-weather pass</div>
           </div>
-          <div class="glass-panel p-2.5 rounded-xl hud-border">
-            <span class="text-[10px] font-mono text-slate-400 uppercase block">Acquisition (UTC)</span>
-            <span id="sarTime" class="font-mono text-cyan-300 font-bold text-xs">06:00:00Z</span>
+          <div class="input-card">
+            <div class="card-icon blue">🚢</div>
+            <div class="card-title">AIS Vessel Feeds</div>
+            <div class="card-sub">Live transponder feeds · 12M+ msgs/day · Global track correlation</div>
           </div>
-          <div class="glass-panel p-2.5 rounded-xl hud-border">
-            <span class="text-[10px] font-mono text-slate-400 uppercase block">Slick Surface Area</span>
-            <span id="slickArea" class="font-mono text-rose-400 font-extrabold text-sm glow-text-rose">4.82 km²</span>
+          <div class="input-card">
+            <div class="card-icon grey">💨</div>
+            <div class="card-title">Wind &amp; Current Data</div>
+            <div class="card-sub">MetOcean feeds · ERA5 reanalysis · CMEMS hydrodynamic drift</div>
           </div>
-          <div class="glass-panel p-2.5 rounded-xl hud-border">
-            <span class="text-[10px] font-mono text-slate-400 uppercase block">Est. Discharge Volume</span>
-            <span id="slickVol" class="font-mono text-amber-400 font-extrabold text-sm">14.5 m³</span>
+          <div class="input-card">
+            <div class="card-icon grey">📊</div>
+            <div class="card-title">Environmental Data</div>
+            <div class="card-sub">Sea surface temperature, wave height, marine sanctuaries</div>
           </div>
         </div>
 
-        <!-- PyTorch U-Net Neural Confidence Card -->
-        <div class="glass-panel p-3.5 rounded-xl space-y-2 border-cyan-800/40">
-          <div class="flex justify-between items-center text-xs">
-            <span class="text-slate-300 font-mono text-[11px] flex items-center space-x-1.5">
-              <i data-lucide="cpu" class="w-3.5 h-3.5 text-cyan-400"></i>
-              <span>PyTorch U-Net Confidence:</span>
-            </span>
-            <span id="aiConfidenceText" class="font-mono font-bold text-cyan-400">92.0%</span>
+        <div class="hero-metrics" id="metrics-2">
+          <div class="metric-item">
+            <span class="metric-value counter" data-target="12" data-suffix="M+">0M+</span>
+            <span class="metric-label">AIS messages / day</span>
           </div>
-          <div class="w-full h-2 bg-c2-950 rounded-full overflow-hidden p-0.5 border border-c2-800">
-            <div id="aiConfidenceBar" class="h-full bg-gradient-to-r from-cyan-500 to-blue-500 rounded-full shadow-lg shadow-cyan-500/50 transition-all duration-500" style="width: 92%"></div>
+          <div class="metric-item">
+            <span class="metric-value counter" data-target="500" data-suffix="K km²">0K km²</span>
+            <span class="metric-label">Area scanned</span>
           </div>
-          <div id="lookalikeAlert" class="p-2 rounded-lg text-[10px] font-mono leading-tight bg-cyan-950/60 border border-cyan-700/40 text-cyan-300">
-            Confirmed Mineral Oil Slick (High Radar Contrast)
+          <div class="metric-item">
+            <span class="metric-value">24/7</span>
+            <span class="metric-label">Global monitoring</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- ─── SECTION 3: AI PROCESSING & DETECTION ─── -->
+      <section id="section-3" class="story-section">
+        <div class="section-label" id="label-3">
+          <span class="section-label-num">03</span>
+          AI Processing &amp; Detection
+        </div>
+        <h2 class="section-title" id="title-3">AI Processing<br>&amp; Detection</h2>
+        <p class="section-desc" id="desc-3">Transforming raw satellite returns into verifiable vessel detections — drag the slider to compare raw radar vs. AI segmentation.</p>
+
+        <!-- Interactive SAR Wipe Lens -->
+        <div class="sar-lens-container" id="sarLens">
+          <div class="sar-layer sar-before">
+            <div style="text-align:center;">
+              <span style="display:block;font-size:12px;color:#fff;font-weight:700;">RAW SENTINEL-1 SAR</span>
+              <span style="font-size:9.5px;opacity:0.7;">Speckle Noise &amp; Sea Clutter</span>
+            </div>
+          </div>
+          <div class="sar-layer sar-after" id="sarAfter">
+            <div style="text-align:center;">
+              <span style="display:block;font-size:12px;color:#38BDF8;font-weight:700;">PYTORCH U-NET + CFAR</span>
+              <span style="font-size:9.5px;color:#E0F2FE;">Segmented Slick Mask // 92% Conf.</span>
+            </div>
+          </div>
+          <div class="sar-divider" id="sarDivider">
+            <div class="sar-handle">↔</div>
           </div>
         </div>
 
-        <!-- Polarimetric Radar Properties -->
-        <div class="glass-panel p-3 rounded-xl text-[10px] font-mono space-y-1.5">
-          <div class="flex justify-between text-slate-400">
-            <span>Radar Backscatter Damping:</span>
-            <span class="text-white font-bold">9.2 dB (Strong Suppression)</span>
+        <div class="pipeline" id="pipeline-3">
+          <div class="pipe-step">SAR Image</div>
+          <span class="pipe-arrow">→</span>
+          <div class="pipe-step">Noise Reduction</div>
+          <span class="pipe-arrow">→</span>
+          <div class="pipe-step">Vessel Extraction</div>
+          <span class="pipe-arrow">→</span>
+          <div class="pipe-step highlight">Dark Vessel Detection ⚡</div>
+        </div>
+
+        <div class="feature-list" id="features-3">
+          <div class="feature-item">
+            <div class="feature-dot"></div>
+            Speckle noise reduction on raw SAR tiles (Adaptive Lee Filter)
           </div>
-          <div class="flex justify-between text-slate-400">
-            <span>Polarization Channels:</span>
-            <span class="text-cyan-300 font-bold">VV + VH Dual-Pol</span>
+          <div class="feature-item">
+            <div class="feature-dot"></div>
+            Vessel extraction with CA-CFAR + PyTorch U-Net deep detection
           </div>
-          <div class="flex justify-between text-slate-400">
-            <span>Spatial Resolution:</span>
-            <span class="text-white font-bold">10.0 meters / pixel</span>
+          <div class="feature-item">
+            <div class="feature-dot"></div>
+            Coastline masking to suppress false alarms
+          </div>
+          <div class="feature-item">
+            <div class="feature-dot"></div>
+            AIS cross-correlation for dark vessel identification (92% confidence)
+          </div>
+        </div>
+      </section>
+
+      <!-- ─── SECTION 4: AI FUSION & ANALYTICS ─── -->
+      <section id="section-4" class="story-section">
+        <div class="section-label" id="label-4">
+          <span class="section-label-num">04</span>
+          AI Fusion &amp; Analytics
+        </div>
+        <h2 class="section-title" id="title-4">AI Fusion<br>&amp; Analytics</h2>
+        <p class="section-desc" id="desc-4">Combining multiple maritime data sources to evaluate vessel track history, backtrack drift, and compute dynamic risk scores.</p>
+
+        <div class="fusion-layout" id="fusion-layout">
+          <div class="fusion-inputs">
+            <div class="fusion-item">
+              <div class="fusion-item-dot" style="background:#DC2626;"></div>
+              Detection Data
+            </div>
+            <div class="fusion-item">
+              <div class="fusion-item-dot" style="background:#2563EB;"></div>
+              AIS History
+            </div>
+            <div class="fusion-item">
+              <div class="fusion-item-dot" style="background:#7BA8D4;"></div>
+              Weather Data
+            </div>
+            <div class="fusion-item">
+              <div class="fusion-item-dot" style="background:#525252;"></div>
+              Ship Registry
+            </div>
+          </div>
+          <div class="fusion-engine">
+            <span class="fusion-engine-icon">⬡</span>
+            AI Fusion<br>Engine
+          </div>
+          <div class="fusion-outputs">
+            <div class="fusion-item">
+              <div class="fusion-item-dot" style="background:#10B981;"></div>
+              Identity Probability
+            </div>
+            <div class="fusion-item">
+              <div class="fusion-item-dot" style="background:#10B981;"></div>
+              Drift Backtracking
+            </div>
+            <div class="fusion-item">
+              <div class="fusion-item-dot" style="background:#10B981;"></div>
+              Risk Assessment
+            </div>
+            <div class="fusion-item">
+              <div class="fusion-item-dot" style="background:#10B981;"></div>
+              Track Association
+            </div>
           </div>
         </div>
 
-      </div>
-
-      <!-- TAB 2 CONTENT: OCEAN DRIFT & WEATHERING PHYSICS -->
-      <div id="tabContentPhysics" class="flex-1 p-4 space-y-3.5 overflow-y-auto custom-scrollbar hidden">
-        
-        <!-- Dynamic Vectors Grid -->
-        <div class="grid grid-cols-2 gap-2 text-xs">
-          <div class="glass-panel p-2.5 rounded-xl">
-            <span class="text-[10px] font-mono text-slate-400 uppercase block">Surface Wind (ERA5)</span>
-            <span id="windData" class="font-mono text-amber-300 font-bold text-xs">6.2 m/s @ 225°</span>
-          </div>
-          <div class="glass-panel p-2.5 rounded-xl">
-            <span class="text-[10px] font-mono text-slate-400 uppercase block">Surface Current (CMEMS)</span>
-            <span id="currentData" class="font-mono text-cyan-300 font-bold text-xs">0.45 m/s @ 45°</span>
-          </div>
-          <div class="glass-panel p-2.5 rounded-xl">
-            <span class="text-[10px] font-mono text-slate-400 uppercase block">Drift Backtrack Time</span>
-            <span id="elapsedDrift" class="font-mono text-purple-300 font-bold text-sm">3.5 hrs</span>
-          </div>
-          <div class="glass-panel p-2.5 rounded-xl">
-            <span class="text-[10px] font-mono text-slate-400 uppercase block">Leeway Factor (α)</span>
-            <span class="font-mono text-slate-200 font-bold text-xs">3.2% + Coriolis</span>
-          </div>
-        </div>
-
-        <!-- Backtracked Discharge Origin Cone -->
-        <div class="p-3 bg-purple-950/40 border border-purple-800/60 rounded-xl text-[11px] font-mono text-purple-200 space-y-1">
-          <div class="flex items-center space-x-1.5 text-purple-400 font-bold text-xs">
-            <i data-lucide="target" class="w-3.5 h-3.5"></i>
-            <span>Discharge Origin Coordinate</span>
-          </div>
-          <div id="originCoords" class="text-sm font-bold text-white">18.820°N, 72.350°E</div>
-          <div class="text-[9px] text-purple-300/80">Computed via Reverse Lagrangian Particle Dispersion</div>
-        </div>
-
-        <!-- Weathering Gauge Card -->
-        <div class="glass-panel p-3 rounded-xl space-y-2 text-xs font-mono">
-          <div class="flex justify-between items-center text-slate-300">
-            <span>Evaporation (24h):</span>
-            <span class="font-bold text-amber-400">35.4% Lost</span>
-          </div>
-          <div class="flex justify-between items-center text-slate-300">
-            <span>Mousse Emulsification:</span>
-            <span class="font-bold text-cyan-400">77.5% Water</span>
-          </div>
-          <div class="flex justify-between items-center text-slate-300">
-            <span>Viscosity Swelling:</span>
-            <span class="font-bold text-rose-400">12,400 cP (Tar)</span>
-          </div>
-        </div>
-
-      </div>
-
-      <!-- TAB 3 CONTENT: ECOLOGICAL THREAT & LANDFALL ETA -->
-      <div id="tabContentThreat" class="flex-1 p-4 space-y-3.5 overflow-y-auto custom-scrollbar hidden">
-        
-        <!-- Threat Level Banner -->
-        <div class="p-3 bg-rose-950/40 border border-rose-800/80 rounded-xl space-y-1">
-          <div class="flex items-center justify-between">
-            <span class="text-[10px] font-mono uppercase text-rose-400 font-bold">Threat Assessment</span>
-            <span class="px-2 py-0.5 text-[9px] font-bold bg-rose-600 text-white rounded">CRITICAL</span>
-          </div>
-          <div class="text-xs font-bold text-white">Shoreline Impact within 24h</div>
-          <div class="text-[10px] text-slate-300 font-mono">Target: Manori & Gorai Coastal Sanctuary</div>
-        </div>
-
-        <!-- Action Items Card -->
-        <div class="glass-panel p-3 rounded-xl space-y-2 text-[11px] font-mono">
-          <div class="text-emerald-400 font-bold text-xs flex items-center space-x-1.5">
-            <i data-lucide="shield-alert" class="w-3.5 h-3.5"></i>
-            <span>Containment Action Plan</span>
-          </div>
-          <div class="space-y-1 text-slate-300">
-            <div>• Deploy <b class="text-white">1,200m</b> inflatable offshore booms.</div>
-            <div>• Chemical dispersants <b class="text-rose-400">PROHIBITED</b> in 10km coastal zone.</div>
-            <div>• Dispatch <b class="text-white">2 skimmer vessels</b> to intercept corridor.</div>
-          </div>
-        </div>
-
-      </div>
-
-      <!-- Bottom System Digest Footer -->
-      <div class="p-3 bg-c2-950/80 border-t border-c2-800 text-[10px] text-slate-400 font-mono flex items-center justify-between">
-        <span class="flex items-center space-x-1 text-cyan-400">
-          <i data-lucide="lock" class="w-3 h-3"></i>
-          <span>AUTHENTICATED FEED</span>
-        </span>
-        <span>SHA256: 7F83B1...OK</span>
-      </div>
-    </aside>
-
-    <!-- CENTER & RIGHT: MAP CANVAS & AIS CULPRIT LEADERBOARD -->
-    <div class="flex-1 flex flex-col overflow-hidden relative">
-      
-      <!-- Interactive Geospatial Map -->
-      <div id="map" class="flex-1 w-full h-full relative z-0"></div>
-
-      <!-- MAP FLOATING QUICK FILTERS (Top Left Floating Pill) -->
-      <div class="absolute top-4 left-4 z-10 flex items-center space-x-1.5 bg-c2-900/90 backdrop-blur-md p-1.5 rounded-xl border border-c2-750 shadow-xl text-xs font-mono">
-        <button id="toggleSlick" class="px-2.5 py-1 rounded-lg bg-cyan-950 text-cyan-300 border border-cyan-700/60 font-semibold hover:bg-cyan-900 transition-all flex items-center space-x-1">
-          <span class="w-2 h-2 rounded-full bg-cyan-400"></span>
-          <span>Slick</span>
-        </button>
-        <button id="toggleOrigin" class="px-2.5 py-1 rounded-lg bg-amber-950 text-amber-300 border border-amber-700/60 font-semibold hover:bg-amber-900 transition-all flex items-center space-x-1">
-          <span class="w-2 h-2 rounded-full bg-amber-400"></span>
-          <span>Origin Cone</span>
-        </button>
-        <button id="toggleDark" class="px-2.5 py-1 rounded-lg bg-rose-950 text-rose-300 border border-rose-700/60 font-semibold hover:bg-rose-900 transition-all flex items-center space-x-1">
-          <span class="w-2 h-2 rounded-full bg-rose-500 animate-ping"></span>
-          <span>Dark Vessel</span>
-        </button>
-      </div>
-
-      <!-- FLOATING AIS CULPRIT LEADERBOARD (Top Right Overlay) -->
-      <div class="absolute top-4 right-4 w-84 lg:w-96 glass-panel rounded-2xl shadow-2xl z-10 overflow-hidden flex flex-col max-h-[82vh] border-c2-750">
-        <div class="p-3.5 bg-c2-950/80 border-b border-c2-800 flex items-center justify-between">
-          <div class="flex items-center space-x-2">
-            <i data-lucide="crosshair" class="w-4 h-4 text-rose-500"></i>
-            <span class="text-xs font-mono font-bold tracking-wider uppercase text-white">AIS Culprit Attribution</span>
-          </div>
-          <span id="vesselCountBadge" class="px-2 py-0.5 text-[10px] font-mono bg-c2-800 text-slate-300 rounded-md font-semibold">3 Vessels</span>
-        </div>
-
-        <div id="culpritList" class="p-3 space-y-2.5 overflow-y-auto custom-scrollbar flex-1">
-          <!-- Dynamically Injected Culprit Cards -->
-        </div>
-      </div>
-
-      <!-- BOTTOM CINEMATIC TIMELINE & REPLAY SCRUBBER -->
-      <div class="h-20 bg-c2-900/95 backdrop-blur-xl border-t border-c2-800 px-6 flex items-center justify-between shrink-0 z-20 shadow-2xl">
-        <div class="flex items-center space-x-3.5">
-          <button id="btnPlayDrift" class="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white flex items-center justify-center shadow-lg shadow-cyan-500/25 transition-all hover:scale-105 active:scale-95">
-            <i data-lucide="play" id="playIcon" class="w-4 h-4 fill-white"></i>
-          </button>
+        <div style="background:rgba(217,119,6,0.06);border:1px solid rgba(217,119,6,0.25);border-radius:12px;padding:16px 20px;display:flex;align-items:center;gap:16px;" id="risk-stat">
           <div>
-            <div class="text-[9px] font-mono uppercase tracking-wider text-slate-400 font-bold">Incident Replay Timeline</div>
-            <div id="currentTimeLabel" class="text-xs font-mono font-extrabold text-cyan-300 glow-text-cyan">06:00 UTC (Detection Pass)</div>
+            <div class="counter" data-target="87" data-suffix="%" style="font-size:28px;font-weight:900;color:#D97706;letter-spacing:-1px;line-height:1;">0%</div>
+            <div style="font-size:10px;color:var(--text-tertiary);font-weight:700;text-transform:uppercase;letter-spacing:1px;">Risk Score</div>
+          </div>
+          <div style="width:1px;height:40px;background:rgba(217,119,6,0.2);"></div>
+          <div>
+            <div style="font-size:13.5px;font-weight:700;color:#D97706;margin-bottom:2px;">Possible Illegal Activity</div>
+            <div style="font-size:11.5px;color:var(--text-tertiary);">Unknown Vessel · Drifting · Proximity to Marine Protected Sanctuary</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ─── SECTION 5: ACTIONABLE INTELLIGENCE ─── -->
+      <section id="section-5" class="story-section">
+        <div class="section-label" id="label-5">
+          <span class="section-label-num">05</span>
+          Actionable Output
+        </div>
+        <h2 class="section-title" id="title-5">Actionable<br>Intelligence</h2>
+        <p class="section-desc" id="desc-5">Turning fused insights into mission-critical enforcement outcomes with court-ready dossiers and real-time intercept vectoring.</p>
+
+        <div class="action-cards" id="action-cards">
+          <div class="action-card">
+            <div style="font-size: 22px; margin-bottom: 12px;">📄</div>
+            <div class="action-card-title">MARPOL Forensic Dossier</div>
+            <ul class="action-card-list">
+              <li>Vessel Identity &amp; Registry</li>
+              <li>Detection Timeline</li>
+              <li>Evidence Package</li>
+              <li>Violation Assessment</li>
+            </ul>
+          </div>
+          <div class="action-card">
+            <div style="font-size: 22px; margin-bottom: 12px;">📍</div>
+            <div class="action-card-title">C2 Intercept Map</div>
+            <ul class="action-card-list">
+              <li>Intercept Coordinates</li>
+              <li>Tactical Route</li>
+              <li>Command Network</li>
+              <li>Real-Time Vectoring</li>
+            </ul>
           </div>
         </div>
 
-        <div class="flex-1 mx-8 flex items-center space-x-4">
-          <span class="text-[11px] font-mono text-slate-500 font-bold" id="timeStartLabel">01:30 UTC</span>
-          <input type="range" id="timeSlider" min="0" max="100" value="100" class="w-full accent-cyan-400 bg-c2-800 h-2 rounded-lg cursor-pointer">
-          <span class="text-[11px] font-mono text-slate-300 font-bold" id="timeEndLabel">06:00 UTC</span>
-        </div>
+        <a href="/c2" class="btn-primary" id="cta-5">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="6" stroke="white" stroke-width="1.5"/><path d="M5 7h4M7 5l2 2-2 2" stroke="white" stroke-width="1.5" stroke-linecap="round"/></svg>
+          Launch Tactical C2 Center
+        </a>
+      </section>
 
-        <div class="hidden lg:flex items-center space-x-4 text-xs font-mono">
-          <div class="flex items-center space-x-1.5">
-            <span class="w-3 h-1 bg-cyan-400 rounded-sm"></span>
-            <span class="text-slate-400 text-[11px]">Slick</span>
+    </div><!-- end sections-column -->
+
+    <!-- ─── RIGHT COLUMN: SINGLE STICKY GLOBE ACROSS ALL SECTIONS ─── -->
+    <div class="globe-column">
+      <div class="globe-sticky">
+        <div id="globe-svg-wrapper">
+          <div id="vessel-tooltip"></div>
+          <svg id="globe-svg" viewBox="0 0 620 620" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <radialGradient id="oceanGrad" cx="38%" cy="32%" r="65%">
+                <stop offset="0%" stop-color="#EFF2F5"/>
+                <stop offset="55%" stop-color="#D9E1E8"/>
+                <stop offset="100%" stop-color="#B2BFCB"/>
+              </radialGradient>
+              <radialGradient id="landGrad" cx="38%" cy="30%" r="70%">
+                <stop offset="0%" stop-color="#C5CBD2"/>
+                <stop offset="100%" stop-color="#9EA8B2"/>
+              </radialGradient>
+              <radialGradient id="globeShine" cx="32%" cy="24%" r="48%">
+                <stop offset="0%" stop-color="rgba(255,255,255,0.7)"/>
+                <stop offset="50%" stop-color="rgba(255,255,255,0.15)"/>
+                <stop offset="100%" stop-color="rgba(255,255,255,0)"/>
+              </radialGradient>
+              <radialGradient id="globeShadow" cx="50%" cy="50%" r="50%">
+                <stop offset="68%" stop-color="rgba(0,0,0,0)"/>
+                <stop offset="100%" stop-color="rgba(0,0,0,0.16)"/>
+              </radialGradient>
+              <clipPath id="globeClip">
+                <circle cx="310" cy="310" r="232"/>
+              </clipPath>
+              <linearGradient id="beamGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stop-color="#2563EB" stop-opacity="0.38"/>
+                <stop offset="70%" stop-color="#2563EB" stop-opacity="0.12"/>
+                <stop offset="100%" stop-color="#2563EB" stop-opacity="0.0"/>
+              </linearGradient>
+              <filter id="glow-sm">
+                <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+                <feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge>
+              </filter>
+              <filter id="glow-red">
+                <feGaussianBlur stdDeviation="3.5" result="coloredBlur"/>
+                <feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge>
+              </filter>
+              <marker id="arrowBlue" markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto">
+                <path d="M0,0 L0,6 L6,3 z" fill="#2563EB"/>
+              </marker>
+            </defs>
+
+            <!-- Soft Ground Shadow -->
+            <ellipse cx="310" cy="570" rx="168" ry="12" fill="rgba(0,0,0,0.08)"/>
+
+            <!-- Ocean Base Sphere -->
+            <circle cx="310" cy="310" r="232" fill="url(#oceanGrad)"/>
+
+            <!-- Lagrangian Current Streamlets (Clipped Inside Sphere) -->
+            <g clip-path="url(#globeClip)" fill="none" stroke="#2563EB" stroke-width="1.2" stroke-dasharray="8 16" opacity="0.35">
+              <path class="streamlet" d="M260 270 Q300 258 340 276 Q380 294 420 280"/>
+              <path class="streamlet" d="M240 295 Q280 290 320 308 Q360 320 400 315" style="animation-delay:-1.2s;"/>
+              <path class="streamlet" d="M330 235 Q370 248 400 268 Q420 280 440 272" style="animation-delay:-2.1s;"/>
+            </g>
+
+            <!-- ─── CONTINENTS: Continuous Repeating Cylindrical Strip (100% Contained) ─── -->
+            <g clip-path="url(#globeClip)">
+              <g class="world-strip-rotator">
+                <!-- Strip Copy 1 -->
+                <g transform="translate(-130.8, 78)" fill="url(#landGrad)" stroke="rgba(255,255,255,0.65)" stroke-width="0.8">
+                  <path d="M399.2,193.3L440.8,167.6L465.3,136.6L519.2,152.1L546.1,201.1L565.7,201.1L543.7,237.2L538.8,270.7L519.2,299.0L502.0,319.6L484.9,322.2L470.2,278.4L460.4,221.7L421.2,221.7Z"/>
+                  <path d="M416.3,139.2L440.8,118.6L465.3,118.6L502.0,128.9L529.0,139.2L551.0,123.7L587.7,116.0L612.2,123.7L626.9,149.5L636.7,175.3L656.3,180.4L666.1,175.3L680.8,195.9L697.9,206.2L710.2,180.4L734.7,149.5L751.8,141.8L759.2,121.2L788.5,116.0L783.6,98.0L832.6,77.3L876.7,61.9L876.7,43.8L783.6,36.1L685.7,33.5L587.7,46.4L526.5,51.6L509.4,49.0L465.3,67.0L453.0,82.5L428.6,103.1L416.3,121.2Z"/>
+                  <path d="M29.4,61.9L73.5,77.3L122.4,92.8L137.1,128.9L154.3,149.5L183.7,175.3L203.3,185.6L220.4,177.9L240.0,172.7L244.9,165.0L257.1,141.8L269.4,118.6L293.9,110.8L306.1,98.0L281.6,77.3L244.9,51.6L195.9,46.4L134.7,51.6L98.0,51.6Z"/>
+                  <path d="M244.9,211.4L269.4,203.6L293.9,206.2L318.4,232.0L355.1,247.5L347.7,270.7L323.3,296.4L298.8,322.2L281.6,348.0L264.5,366.0L257.1,348.0L264.5,322.2L269.4,283.6L249.8,244.9Z"/>
+                  <path d="M717.5,288.7L739.6,278.4L759.2,262.9L788.5,260.4L798.3,281.0L815.5,301.6L808.1,327.4L783.6,330.0L759.2,314.5L722.4,319.6Z"/>
+                  <path d="M330.6,77.3L391.8,51.6L379.6,20.6L318.4,18.0L298.8,38.7Z"/>
+                  <path d="M546.1,262.9L563.2,273.2L558.3,296.4L548.6,283.6Z"/>
+                  <path d="M759.2,149.5L783.6,136.6L795.9,118.6L778.7,139.2L764.1,152.1Z"/>
+                  <path d="M673.4,219.1L729.8,216.5L759.2,234.6L783.6,239.7L754.3,252.6L710.2,252.6L680.8,237.2Z"/>
+                </g>
+                <!-- Strip Copy 2 -->
+                <g transform="translate(750.8, 78)" fill="url(#landGrad)" stroke="rgba(255,255,255,0.65)" stroke-width="0.8">
+                  <path d="M399.2,193.3L440.8,167.6L465.3,136.6L519.2,152.1L546.1,201.1L565.7,201.1L543.7,237.2L538.8,270.7L519.2,299.0L502.0,319.6L484.9,322.2L470.2,278.4L460.4,221.7L421.2,221.7Z"/>
+                  <path d="M416.3,139.2L440.8,118.6L465.3,118.6L502.0,128.9L529.0,139.2L551.0,123.7L587.7,116.0L612.2,123.7L626.9,149.5L636.7,175.3L656.3,180.4L666.1,175.3L680.8,195.9L697.9,206.2L710.2,180.4L734.7,149.5L751.8,141.8L759.2,121.2L788.5,116.0L783.6,98.0L832.6,77.3L876.7,61.9L876.7,43.8L783.6,36.1L685.7,33.5L587.7,46.4L526.5,51.6L509.4,49.0L465.3,67.0L453.0,82.5L428.6,103.1L416.3,121.2Z"/>
+                  <path d="M29.4,61.9L73.5,77.3L122.4,92.8L137.1,128.9L154.3,149.5L183.7,175.3L203.3,185.6L220.4,177.9L240.0,172.7L244.9,165.0L257.1,141.8L269.4,118.6L293.9,110.8L306.1,98.0L281.6,77.3L244.9,51.6L195.9,46.4L134.7,51.6L98.0,51.6Z"/>
+                  <path d="M244.9,211.4L269.4,203.6L293.9,206.2L318.4,232.0L355.1,247.5L347.7,270.7L323.3,296.4L298.8,322.2L281.6,348.0L264.5,366.0L257.1,348.0L264.5,322.2L269.4,283.6L249.8,244.9Z"/>
+                  <path d="M717.5,288.7L739.6,278.4L759.2,262.9L788.5,260.4L798.3,281.0L815.5,301.6L808.1,327.4L783.6,330.0L759.2,314.5L722.4,319.6Z"/>
+                  <path d="M330.6,77.3L391.8,51.6L379.6,20.6L318.4,18.0L298.8,38.7Z"/>
+                  <path d="M546.1,262.9L563.2,273.2L558.3,296.4L548.6,283.6Z"/>
+                  <path d="M759.2,149.5L783.6,136.6L795.9,118.6L778.7,139.2L764.1,152.1Z"/>
+                  <path d="M673.4,219.1L729.8,216.5L759.2,234.6L783.6,239.7L754.3,252.6L710.2,252.6L680.8,237.2Z"/>
+                </g>
+              </g>
+            </g>
+
+            <!-- Latitude/Longitude Curved Graticule -->
+            <g clip-path="url(#globeClip)" opacity="0.22" stroke="#687B8A" stroke-width="0.85" fill="none">
+              <ellipse cx="310" cy="310" rx="232" ry="81"/>
+              <ellipse cx="310" cy="310" rx="232" ry="144"/>
+              <ellipse cx="310" cy="310" rx="232" ry="197"/>
+              <line x1="78" y1="310" x2="542" y2="310" stroke="#687B8A" stroke-width="0.9" opacity="0.4"/>
+              <ellipse cx="310" cy="310" rx="93" ry="232"/>
+              <ellipse cx="310" cy="310" rx="174" ry="232"/>
+            </g>
+
+            <!-- 3D Specular Lighting & Depth Gradient -->
+            <circle cx="310" cy="310" r="232" fill="url(#globeShine)"/>
+            <circle cx="310" cy="310" r="232" fill="url(#globeShadow)"/>
+
+            <!-- ═════ LAYER 1: AIS ROUTES + REAL-TIME FLEET ═════ -->
+            <g id="layer-ais" class="globe-layer" opacity="1">
+              <g clip-path="url(#globeClip)" fill="none">
+                <path d="M350 220 Q385 230 415 235 Q440 242 458 252" stroke="#2563EB" stroke-width="1.8" stroke-dasharray="5 3" opacity="0.75"/>
+                <path d="M340 260 Q375 265 405 270 Q430 275 440 288" stroke="#2563EB" stroke-width="1.3" stroke-dasharray="4 3" opacity="0.6"/>
+                <path d="M200 200 Q225 212 255 216 Q280 218 300 216" stroke="#2563EB" stroke-width="1.3" stroke-dasharray="4 3" opacity="0.5"/>
+              </g>
+
+              <!-- Vessel Blips with Pulse Rings -->
+              <g class="vessel-target" data-name="CMA CGM Mumbai" data-info="Speed: 19.4 kn · AIS: Active" transform="translate(405, 235)" style="cursor:pointer;">
+                <polygon points="0,-8 5,6 0,3.5 -5,6" fill="#2563EB" opacity="0.95" filter="url(#glow-sm)"/>
+                <circle cx="0" cy="0" r="10" fill="none" stroke="#2563EB" stroke-width="0.8" opacity="0.5"/>
+              </g>
+              <g class="vessel-target" data-name="Ever Ace" data-info="Speed: 17.8 kn · AIS: Active" transform="translate(275, 220)" style="cursor:pointer;">
+                <polygon points="0,-7 4,5 0,3 -4,5" fill="#2563EB" opacity="0.8"/>
+              </g>
+              <g class="vessel-target" data-name="MT Ocean Titan" data-info="Speed: 12.1 kn · AIS: Active" transform="translate(365, 260)" style="cursor:pointer;">
+                <polygon points="0,-7 4,5 0,3 -4,5" fill="#2563EB" opacity="0.8"/>
+              </g>
+            </g>
+
+            <!-- ═════ LAYER 2: SATELLITE SCANNING BEAM & RADAR WAVE ═════ -->
+            <g id="layer-scan" class="globe-layer" opacity="0">
+              <g clip-path="url(#globeClip)">
+                <!-- Phased-Array Radar Wave Rings -->
+                <circle cx="240" cy="170" r="22" class="radar-pulse-ring" fill="none" stroke="#2563EB" stroke-width="1.4"/>
+                
+                <!-- Phased-Array Radar Cone -->
+                <path d="M240 170 L185 300 L295 300 Z" fill="url(#beamGrad)" opacity="0.9"/>
+                <line x1="185" y1="300" x2="295" y2="300" stroke="#2563EB" stroke-width="2.4" opacity="0.75" filter="url(#glow-sm)"/>
+                
+                <!-- Swath Scan Footprint Grid -->
+                <ellipse cx="240" cy="300" rx="55" ry="14" fill="rgba(37,99,235,0.12)" stroke="#2563EB" stroke-width="0.8" stroke-dasharray="3 2"/>
+                
+                <!-- Discovered Radar Targets -->
+                <circle cx="260" cy="285" r="5" fill="#2563EB" opacity="0.9" filter="url(#glow-sm)"/>
+                <circle cx="225" cy="305" r="4.5" fill="#DC2626" opacity="0.95" filter="url(#glow-red)"/>
+              </g>
+            </g>
+
+            <!-- ═════ LAYER 3: DETECTION ZOOM & TARGET LOCK ═════ -->
+            <g id="layer-detect" class="globe-layer" opacity="0">
+              <g clip-path="url(#globeClip)">
+                <!-- Target Reticle & Brackets -->
+                <g class="target-bracket">
+                  <path d="M360 285 L360 275 L370 275" stroke="#DC2626" stroke-width="2.5" fill="none"/>
+                  <path d="M398 275 L408 275 L408 285" stroke="#DC2626" stroke-width="2.5" fill="none"/>
+                  <path d="M360 308 L360 318 L370 318" stroke="#DC2626" stroke-width="2.5" fill="none"/>
+                  <path d="M398 318 L408 318 L408 308" stroke="#DC2626" stroke-width="2.5" fill="none"/>
+                </g>
+
+                <!-- Dark Vessel Red Blip -->
+                <circle cx="384" cy="296" r="7" fill="#DC2626" filter="url(#glow-red)"/>
+                <polygon points="384,282 390,298 384,295 378,298" fill="#DC2626"/>
+
+                <!-- Pulse Rings -->
+                <circle cx="384" cy="296" r="14" fill="none" stroke="#DC2626" stroke-width="1.2" opacity="0.6"/>
+                <circle cx="384" cy="296" r="26" fill="none" stroke="#DC2626" stroke-width="0.8" stroke-dasharray="4 3" opacity="0.35"/>
+              </g>
+            </g>
+
+            <!-- ═════ LAYER 4: ANALYTICS & PARTICLE FLOW ═════ -->
+            <g id="layer-analytics" class="globe-layer" opacity="0">
+              <g clip-path="url(#globeClip)" fill="none">
+                <!-- Historical AIS Drift Path (Grey Dashed) -->
+                <path d="M305 225 Q332 248 355 268 Q376 284 384 296" stroke="#737373" stroke-width="2" stroke-dasharray="5 3.5"/>
+                <!-- Predicted Drift Trajectory (Blue Vibrant) -->
+                <path d="M384 296 Q396 318 402 338 Q406 356 403 372" stroke="#2563EB" stroke-width="2.5" stroke-dasharray="6 3" marker-end="url(#arrowBlue)" filter="url(#glow-sm)"/>
+                
+                <!-- Ocean Surface Flow Streamlines -->
+                <g opacity="0.45">
+                  <path d="M290 318 Q310 316 322 320" stroke="#60A5FA" stroke-width="1.4" marker-end="url(#arrowBlue)"/>
+                  <path d="M350 306 Q366 312 376 322" stroke="#60A5FA" stroke-width="1.4" marker-end="url(#arrowBlue)"/>
+                </g>
+
+                <circle cx="384" cy="296" r="7.5" fill="#DC2626" filter="url(#glow-red)"/>
+              </g>
+            </g>
+
+            <!-- ═════ LAYER 5: INTERCEPT & COMMAND VECTORING ═════ -->
+            <g id="layer-intercept" class="globe-layer" opacity="0">
+              <g clip-path="url(#globeClip)">
+                <!-- Target Ship -->
+                <circle cx="403" cy="370" r="8" fill="#DC2626" filter="url(#glow-red)"/>
+                <polygon points="403,356 409,372 403,369 397,372" fill="#DC2626"/>
+
+                <!-- Patrol Interceptor Vessel -->
+                <polygon points="345,405 351,421 339,421" fill="#2563EB" filter="url(#glow-sm)"/>
+
+                <!-- Intercept Vectoring Spline -->
+                <path d="M345 412 Q368 402 388 385 Q396 376 403 370" stroke="#2563EB" stroke-width="2.5" stroke-dasharray="6 3" fill="none" marker-end="url(#arrowBlue)" filter="url(#glow-sm)"/>
+                
+                <!-- Crosshair reticle -->
+                <circle cx="403" cy="370" r="18" fill="none" stroke="#2563EB" stroke-width="1" stroke-dasharray="3 2" opacity="0.6"/>
+              </g>
+            </g>
+
+            <!-- Tight Sphere Outer Boundary Rims -->
+            <circle cx="310" cy="310" r="232" fill="none" stroke="rgba(100,116,139,0.38)" stroke-width="1.2"/>
+            <circle cx="310" cy="310" r="246" fill="none" stroke="rgba(100,116,139,0.18)" stroke-width="0.8"/>
+
+            <!-- Satellite Orbital Ellipse & Satellite Icon -->
+            <g opacity="0.95">
+              <ellipse cx="310" cy="310" rx="278" ry="144" fill="none" stroke="#2563EB" stroke-width="1.2" stroke-dasharray="6 8" opacity="0.38" transform="rotate(-22 310 310)"/>
+              <g id="satellite-hero" class="vessel-target" data-name="Sentinel-1 SAR" data-info="C-Band Dual-Pol · 10m Res" transform="translate(200, 155)" style="cursor:pointer;">
+                <rect x="-10" y="-6" width="20" height="12" rx="3" fill="#1E293B"/>
+                <rect x="-22" y="-3" width="12" height="6" rx="1" fill="#2563EB" opacity="0.9"/>
+                <rect x="10" y="-3" width="12" height="6" rx="1" fill="#2563EB" opacity="0.9"/>
+                <circle cx="0" cy="0" r="3" fill="white"/>
+                <circle cx="0" cy="0" r="1.5" fill="#2563EB"/>
+              </g>
+            </g>
+          </svg>
+
+          <!-- Floating HUD Cards -->
+          <div class="globe-card" id="card-ais" style="top: 24px; right: -24px;">
+            <div class="globe-card-title">AIS Fleet Monitoring</div>
+            <div class="globe-card-value">94,280 vessels</div>
+            <div class="globe-card-sub">Tracked globally · <span class="mono" style="font-size:10px;">06:00 UTC</span></div>
+            <div style="margin-top:8px;"><span class="globe-card-badge badge-blue">● Real-Time Feed</span></div>
           </div>
-          <div class="flex items-center space-x-1.5">
-            <span class="w-3 h-1 bg-amber-400 rounded-sm border-dashed"></span>
-            <span class="text-slate-400 text-[11px]">Origin Cone</span>
+
+          <div class="globe-card" id="card-scan" style="top: 20px; right: -20px;">
+            <div class="globe-card-title">Sentinel-1 SAR Radar</div>
+            <div class="globe-card-value">Active Swath Pass</div>
+            <div class="globe-card-sub mono" style="font-size:10px;">250km Width · C-Band Dual-Pol</div>
+            <div style="margin-top:8px;"><span class="globe-card-badge badge-blue">▶ Live Orbital Sweep</span></div>
           </div>
-          <div class="flex items-center space-x-1.5">
-            <span class="w-3 h-1 bg-rose-500 rounded-sm"></span>
-            <span class="text-slate-400 text-[11px]">Suspect Track</span>
+
+          <div class="globe-card" id="card-dark" style="top: 14px; right: -24px;">
+            <div class="globe-card-title" style="color:#DC2626;">⚠ Detection Alert</div>
+            <div class="globe-card-value">Potential Dark Vessel</div>
+            <div class="globe-card-sub mono" style="font-size:10px;">12.346°N  72.118°E</div>
+            <div style="margin-top:8px;"><span class="globe-card-badge badge-red">⚡ Conf: 92% // AIS Off</span></div>
           </div>
-          <div class="flex items-center space-x-1.5">
-            <span class="w-3 h-1 bg-fuchsia-500 rounded-sm border-dashed"></span>
-            <span class="text-slate-400 text-[11px]">72h Landfall</span>
+
+          <div class="globe-card" id="card-risk" style="top: 14px; right: -24px;">
+            <div class="globe-card-title" style="color:#D97706;">⚠ AI Risk Engine</div>
+            <div class="globe-card-value" style="font-size:20px;font-weight:900;color:#D97706;">Risk Score: 87%</div>
+            <div class="globe-card-sub">Possible Illegal Activity</div>
+            <div style="margin-top:8px;"><span class="globe-card-badge badge-amber">Drifting · AIS Inactive</span></div>
+          </div>
+
+          <div class="globe-card" id="card-intercept" style="bottom: 50px; right: -24px;">
+            <div class="globe-card-title">📍 C2 Intercept Vector</div>
+            <div class="globe-card-value mono" style="font-size:12.5px;">14.852°N  73.421°E</div>
+            <div class="globe-card-sub">ETA: 2h 14m · Vectoring</div>
+            <div style="margin-top:8px;"><a href="/c2" style="text-decoration:none;"><span class="globe-card-badge badge-blue">→ Open C2 Tactical Map</span></a></div>
+          </div>
+
+          <!-- Globe status bar -->
+          <div class="globe-status" id="globe-status-bar">
+            <div class="status-dot"></div>
+            <span id="globe-status-text">Global Maritime Picture · 94,280 vessels</span>
           </div>
         </div>
       </div>
-    </div>
+    </div><!-- end globe-column -->
+
   </main>
 
-  <!-- FORENSIC EVIDENCE DOSSIER MODAL -->
-  <div id="dossierModal" class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
-    <div class="bg-c2-900 border border-c2-750 rounded-2xl w-full max-w-4xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
-      <!-- Modal Header -->
-      <div class="p-4 bg-c2-950 border-b border-c2-800 flex items-center justify-between">
-        <div class="flex items-center space-x-2.5">
-          <div class="w-8 h-8 rounded-lg bg-rose-600/20 text-rose-400 flex items-center justify-center border border-rose-500/30">
-            <i data-lucide="shield-alert" class="w-4 h-4 text-rose-500"></i>
-          </div>
-          <div>
-            <h3 class="text-sm font-bold text-white tracking-wide">FORENSIC INCIDENT EVIDENCE DOSSIER</h3>
-            <p class="text-[10px] font-mono text-slate-400">MARPOL 73/78 Annex I Violation Attribution Report</p>
-          </div>
-        </div>
-        <div class="flex items-center space-x-2">
-          <button onclick="window.print()" class="px-3 py-1.5 bg-c2-800 hover:bg-c2-750 text-slate-200 text-xs font-mono rounded-xl flex items-center space-x-1.5 border border-c2-700 shadow transition-all">
-            <i data-lucide="printer" class="w-3.5 h-3.5"></i>
-            <span>Print / PDF</span>
-          </button>
-          <button id="btnCloseDossier" class="w-8 h-8 rounded-xl bg-c2-800 hover:bg-c2-750 text-slate-400 hover:text-white flex items-center justify-center transition-all">
-            <i data-lucide="x" class="w-4 h-4"></i>
-          </button>
-        </div>
-      </div>
-      <!-- Modal Content -->
-      <div class="p-6 overflow-y-auto custom-scrollbar font-mono text-xs leading-relaxed text-slate-300 bg-c2-950/40">
-        <pre id="dossierMarkdownContent" class="whitespace-pre-wrap font-mono text-slate-300"></pre>
-      </div>
+
+
+  <!-- ─── FOOTER ─── -->
+  <footer>
+    <div class="footer-logo">
+      <svg width="22" height="22" viewBox="0 0 28 28" fill="none"><circle cx="14" cy="14" r="12" stroke="#2563EB" stroke-width="2"/><ellipse cx="14" cy="14" rx="5" ry="12" stroke="#2563EB" stroke-width="1.5"/><path d="M3 14h22" stroke="#2563EB" stroke-width="1.5"/><circle cx="14" cy="10" r="2" fill="#2563EB"/></svg>
+      Sealens
     </div>
-  </div>
-
-  <!-- 72H FORWARD DRIFT & WEATHERING MODAL -->
-  <div id="landfallModal" class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
-    <div class="bg-c2-900 border border-purple-700/80 rounded-2xl w-full max-w-4xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
-      <!-- Modal Header -->
-      <div class="p-4 bg-c2-950 border-b border-c2-800 flex items-center justify-between">
-        <div class="flex items-center space-x-2.5">
-          <div class="w-8 h-8 rounded-lg bg-purple-600/20 text-purple-400 flex items-center justify-center border border-purple-500/30">
-            <i data-lucide="compass" class="w-4 h-4 text-purple-400 animate-pulse"></i>
-          </div>
-          <div>
-            <h3 class="text-sm font-bold text-white tracking-wide">72-HOUR FORWARD DRIFT & COASTAL LANDFALL INTELLIGENCE</h3>
-            <p class="text-[10px] font-mono text-purple-300">Lagrangian Shoreline Impact Prediction & Petroleum Weathering Physics</p>
-          </div>
-        </div>
-        <button id="btnCloseLandfall" class="w-8 h-8 rounded-xl bg-c2-800 hover:bg-c2-750 text-slate-400 hover:text-white flex items-center justify-center transition-all">
-          <i data-lucide="x" class="w-4 h-4"></i>
-        </button>
-      </div>
-      <!-- Modal Content -->
-      <div class="p-6 overflow-y-auto custom-scrollbar space-y-5 text-xs font-mono bg-c2-950/40">
-        
-        <!-- Impact Threat Alert Banner -->
-        <div id="landfallThreatBanner" class="p-4 rounded-xl border flex items-center justify-between bg-rose-950/40 border-rose-700/80 text-rose-300 shadow-lg">
-          <div class="flex items-center space-x-3.5">
-            <i data-lucide="alert-triangle" class="w-7 h-7 text-rose-500 shrink-0 animate-bounce"></i>
-            <div>
-              <div class="text-[10px] uppercase font-bold tracking-wider text-rose-400">CRITICAL SHORELINE THREAT DETECTED</div>
-              <div id="landfallTargetText" class="text-sm font-extrabold text-white mt-0.5">Target: Manori & Gorai Sanctuary</div>
-            </div>
-          </div>
-          <div class="text-right">
-            <span class="text-[10px] text-slate-400 block uppercase">Projected ETA</span>
-            <span id="landfallEtaText" class="text-xl font-extrabold text-rose-400 glow-text-rose">24.0 Hours</span>
-          </div>
-        </div>
-
-        <!-- Petroleum Weathering Matrix -->
-        <div>
-          <h4 class="text-xs uppercase font-bold text-slate-300 mb-2.5 flex items-center space-x-1.5">
-            <i data-lucide="flame" class="w-4 h-4 text-amber-400"></i>
-            <span>Physico-Chemical Weathering Degradation (Mackay Model)</span>
-          </h4>
-          <div class="grid grid-cols-2 md:grid-cols-4 gap-2.5">
-            <div class="glass-panel p-3 rounded-xl border-c2-800">
-              <span class="text-[10px] text-slate-400 uppercase block">Evaporated Fraction</span>
-              <span id="wEvapPct" class="text-sm font-bold text-amber-400">35.4%</span>
-              <span class="text-[9px] text-slate-500 block mt-0.5">Light volatiles lost</span>
-            </div>
-            <div class="glass-panel p-3 rounded-xl border-c2-800">
-              <span class="text-[10px] text-slate-400 uppercase block">Emulsion Water Uptake</span>
-              <span id="wEmulsionPct" class="text-sm font-bold text-cyan-400">77.5%</span>
-              <span class="text-[9px] text-slate-500 block mt-0.5">"Chocolate Mousse"</span>
-            </div>
-            <div class="glass-panel p-3 rounded-xl border-c2-800">
-              <span class="text-[10px] text-slate-400 uppercase block">Emulsified Volume</span>
-              <span id="wEmulsifiedVol" class="text-sm font-bold text-purple-400">23.4 m³</span>
-              <span class="text-[9px] text-slate-500 block mt-0.5">+61% volume swelling</span>
-            </div>
-            <div class="glass-panel p-3 rounded-xl border-c2-800">
-              <span class="text-[10px] text-slate-400 uppercase block">Dynamic Viscosity</span>
-              <span id="wViscosity" class="text-sm font-bold text-rose-400">12,400 cP</span>
-              <span class="text-[9px] text-slate-500 block mt-0.5">Heavy Sticky Tar</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- Containment & Response Recommendations -->
-        <div class="glass-panel p-4 rounded-xl border-emerald-800/40 space-y-2">
-          <h4 class="text-xs uppercase font-bold text-emerald-400 flex items-center space-x-1.5">
-            <i data-lucide="shield-check" class="w-4 h-4"></i>
-            <span>Emergency Containment & Defense Deployment Plan</span>
-          </h4>
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-[11px] text-slate-300 pt-1">
-            <div class="p-2.5 bg-c2-900/90 rounded-xl border border-c2-750">
-              <span class="text-slate-400 block text-[10px] uppercase">Recommended Booms</span>
-              <span id="cBooms" class="font-bold text-white text-xs">1,200 meters of Offshore Inflatable Booms</span>
-            </div>
-            <div class="p-2.5 bg-c2-900/90 rounded-xl border border-c2-750">
-              <span class="text-slate-400 block text-[10px] uppercase">Chemical Dispersants Status</span>
-              <span id="cDispersants" class="font-bold text-amber-300 text-xs">PROHIBITED (Near Marine Sanctuary)</span>
-            </div>
-          </div>
-        </div>
-
-      </div>
+    <div class="footer-links">
+      <a href="#section-1">Home</a>
+      <a href="#section-2">Technology</a>
+      <a href="#section-3">Detection</a>
+      <a href="#section-4">Analytics</a>
+      <a href="/c2">C2 Operations</a>
     </div>
-  </div>
+    <div style="font-size: 12px; color: var(--text-tertiary);">
+      Smart India Hackathon #143 // NTRO
+    </div>
+  </footer>
 
-  <!-- APPLICATION LOGIC & LEAFLET RENDERING -->
-  <script>
-    lucide.createIcons();
+</div><!-- end page-wrapper -->
 
-    // UTC Clock
-    setInterval(() => {
-      const now = new Date();
-      document.getElementById('liveClockUtc').textContent = now.toUTCString().split(' ')[4] + ' UTC';
-    }, 1000);
+<script>
+// ════════════════════════════════════════════════════
+//  SEALENS — ADVANCED GSAP + SCROLLTRIGGER STORYLINE
+// ════════════════════════════════════════════════════
 
-    // Map initialization
-    const map = L.map('map', {
-      center: [18.85, 72.40],
-      zoom: 11,
-      zoomControl: false
-    });
+gsap.registerPlugin(ScrollTrigger);
 
-    L.control.zoom({ position: 'bottomright' }).addTo(map);
-
-    // CARTO Basemaps API Key
-    const CARTO_KEY = 'cb1_2oyo_1_0bc33229606568c9cd2012a1';
-
-    // Base Tile Layers
-    const darkMatter = L.tileLayer(`https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png?key=${CARTO_KEY}`, {
-      attribution: '&copy; CARTO &copy; OpenStreetMap',
-      subdomains: 'abcd',
-      maxZoom: 19
-    }).addTo(map);
-
-    const satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-      attribution: 'Tiles &copy; Esri',
-      maxZoom: 19
-    });
-
-    const voyagerLayer = L.tileLayer(`https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png?key=${CARTO_KEY}`, {
-      attribution: '&copy; CARTO &copy; OpenStreetMap',
-      subdomains: 'abcd',
-      maxZoom: 19
-    });
-
-    // Layer Switcher Control
-    L.control.layers({
-      "Tactical Dark (CARTO)": darkMatter,
-      "High-Res Satellite (Esri)": satelliteLayer,
-      "Navigation Voyager": voyagerLayer
-    }, null, { position: 'topleft' }).addTo(map);
-
-    // Map Layer Groups
-    let slickLayerGroup = L.layerGroup().addTo(map);
-    let coneLayerGroup = L.layerGroup().addTo(map);
-    let vesselTracksGroup = L.layerGroup().addTo(map);
-    let vesselMarkersGroup = L.layerGroup().addTo(map);
-    let driftArrowGroup = L.layerGroup().addTo(map);
-    let darkVesselGroup = L.layerGroup().addTo(map);
-    let forwardDriftGroup = L.layerGroup().addTo(map);
-
-    let currentScenarioData = null;
-    let isPlaying = false;
-    let playInterval = null;
-
-    // Tab Navigation Logic
-    const tabBtnSAR = document.getElementById('tabBtnSAR');
-    const tabBtnPhysics = document.getElementById('tabBtnPhysics');
-    const tabBtnThreat = document.getElementById('tabBtnThreat');
-    const tabContentSAR = document.getElementById('tabContentSAR');
-    const tabContentPhysics = document.getElementById('tabContentPhysics');
-    const tabContentThreat = document.getElementById('tabContentThreat');
-
-    function switchTab(activeBtn, activeContent) {
-      [tabBtnSAR, tabBtnPhysics, tabBtnThreat].forEach(b => {
-        b.className = "py-2.5 text-center text-slate-400 hover:text-slate-200 transition-all flex items-center justify-center space-x-1";
-      });
-      [tabContentSAR, tabContentPhysics, tabContentThreat].forEach(c => c.classList.add('hidden'));
-
-      activeBtn.className = "py-2.5 text-center text-cyan-400 border-b-2 border-cyan-400 bg-c2-900/60 transition-all flex items-center justify-center space-x-1 font-bold";
-      activeContent.classList.remove('hidden');
+// ─── SCROLL PROGRESS BAR & RAIL SPINE FILL ───
+gsap.to('#progress-bar', {
+  scaleX: 1,
+  ease: 'none',
+  scrollTrigger: {
+    trigger: 'body',
+    start: 'top top',
+    end: 'bottom bottom',
+    scrub: true,
+    onUpdate: (self) => {
+      document.getElementById('rail-fill').style.height = (self.progress * 100) + '%';
     }
+  }
+});
 
-    tabBtnSAR.addEventListener('click', () => switchTab(tabBtnSAR, tabContentSAR));
-    tabBtnPhysics.addEventListener('click', () => switchTab(tabBtnPhysics, tabContentPhysics));
-    tabBtnThreat.addEventListener('click', () => switchTab(tabBtnThreat, tabContentThreat));
+// ─── HERO ENTRANCE TIMELINE ───
+const heroTl = gsap.timeline({ delay: 0.15 });
+heroTl
+  .to('#eyebrow-1',   { opacity: 1, y: 0, duration: 0.6, ease: 'power3.out' })
+  .to('#hero-title',  { opacity: 1, y: 0, duration: 0.7, ease: 'power3.out' }, '-=0.3')
+  .to('#hero-subtitle',{ opacity: 1, y: 0, duration: 0.6, ease: 'power3.out' }, '-=0.3')
+  .to('#hero-desc',   { opacity: 1, y: 0, duration: 0.6, ease: 'power3.out' }, '-=0.3')
+  .to('#hero-btns',   { opacity: 1, y: 0, duration: 0.5, ease: 'power3.out' }, '-=0.3')
+  .to('#hero-metrics',{ opacity: 1, y: 0, duration: 0.5, ease: 'power3.out' }, '-=0.2')
+  .to('#card-ais',    { opacity: 1, scale: 1, y: 0, duration: 0.5, ease: 'back.out(1.6)' }, '-=0.3')
+  .to('#globe-status-bar', { opacity: 1, y: 0, duration: 0.4 }, '-=0.2');
 
-    // Map Quick Filter Toggles
-    document.getElementById('toggleSlick').addEventListener('click', function() {
-      if (map.hasLayer(slickLayerGroup)) { map.removeLayer(slickLayerGroup); this.style.opacity = '0.5'; }
-      else { map.addLayer(slickLayerGroup); this.style.opacity = '1.0'; }
-    });
-    document.getElementById('toggleOrigin').addEventListener('click', function() {
-      if (map.hasLayer(coneLayerGroup)) { map.removeLayer(coneLayerGroup); this.style.opacity = '0.5'; }
-      else { map.addLayer(coneLayerGroup); this.style.opacity = '1.0'; }
-    });
-    document.getElementById('toggleDark').addEventListener('click', function() {
-      if (map.hasLayer(darkVesselGroup)) { map.removeLayer(darkVesselGroup); this.style.opacity = '0.5'; }
-      else { map.addLayer(darkVesselGroup); this.style.opacity = '1.0'; }
-    });
+// ─── GLOBE SUBTLE FLOATING PULSE ───
+gsap.to('#globe-svg-wrapper', {
+  y: -10,
+  duration: 5.0,
+  ease: 'sine.inOut',
+  yoyo: true,
+  repeat: -1
+});
 
-    // Fetch and Load Scenario
-    async function loadScenario(scenarioId) {
-      try {
-        const res = await fetch(`/api/scenario/${scenarioId}`);
-        if (!res.ok) throw new Error("Failed to load scenario");
-        const data = await res.json();
-        currentScenarioData = data;
-        renderScenario(data);
+// ─── GLOBE STORYTELLING LAYERS & FOCAL ZOOM ───
+const globeLayers = ['layer-ais', 'layer-scan', 'layer-detect', 'layer-analytics', 'layer-intercept'];
+const cards = ['card-ais', 'card-scan', 'card-dark', 'card-risk', 'card-intercept'];
 
-        // Fetch Dark Vessels
-        loadDarkVessels(scenarioId);
-      } catch (err) {
-        console.error("Scenario load error:", err);
-      }
+function setActiveLayer(layerId) {
+  globeLayers.forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    gsap.to(el, { opacity: id === layerId ? 1 : 0, duration: 0.5, ease: 'power2.inOut' });
+  });
+}
+
+function showCard(cardId, statusText) {
+  cards.forEach(id => {
+    gsap.to('#' + id, { opacity: 0, scale: 0.9, y: 8, duration: 0.25, ease: 'power2.in' });
+  });
+  gsap.to('#' + cardId, { opacity: 1, scale: 1, y: 0, duration: 0.45, ease: 'back.out(1.6)', delay: 0.15 });
+  if (statusText) {
+    document.getElementById('globe-status-text').textContent = statusText;
+  }
+}
+
+// Cinematic Camera Focal Configurations (Scale + Center Offset)
+const cameraConfigs = {
+  1: { scale: 1.0,  x: 0,   y: 0 },
+  2: { scale: 1.08, x: -10, y: -5 },
+  3: { scale: 1.32, x: -35, y: -25 }, // Zoom into Indian Ocean / Arabian Sea
+  4: { scale: 1.45, x: -45, y: -35 }, // Focus on drift corridor
+  5: { scale: 1.60, x: -55, y: -45 }  // Tactical intercept focus
+};
+
+function setGlobeSection(n) {
+  const cfg = cameraConfigs[n] || cameraConfigs[1];
+  
+  gsap.to('#globe-svg', {
+    scale: cfg.scale,
+    x: cfg.x,
+    y: cfg.y,
+    duration: 1.2,
+    ease: 'power3.inOut',
+    transformOrigin: '310px 310px'
+  });
+
+  switch(n) {
+    case 1:
+      setActiveLayer('layer-ais');
+      showCard('card-ais', 'Global Maritime Picture · 94,280 vessels');
+      break;
+    case 2:
+      setActiveLayer('layer-scan');
+      showCard('card-scan', 'Sentinel-1 SAR · Active Orbital Swath');
+      break;
+    case 3:
+      setActiveLayer('layer-detect');
+      showCard('card-dark', 'Dark Vessel Alert · Conf: 92%');
+      break;
+    case 4:
+      setActiveLayer('layer-analytics');
+      showCard('card-risk', 'AI Fusion Engine · Risk Score: 87%');
+      break;
+    case 5:
+      setActiveLayer('layer-intercept');
+      showCard('card-intercept', 'C2 Vectoring · Intercept Locked');
+      break;
+  }
+
+  // Update nav dots
+  document.querySelectorAll('.dot-item').forEach(dot => {
+    dot.classList.toggle('active', parseInt(dot.dataset.section) === n);
+  });
+
+  // Run numerical counters in this section
+  animateCounters('#section-' + n);
+}
+
+// ─── SCROLLTRIGGER SCENE BINDINGS ───
+function makeContentTrigger(sectionId, elements, sectionNum) {
+  const tl = gsap.timeline({
+    scrollTrigger: {
+      trigger: '#' + sectionId,
+      start: 'top 60%',
+      end: 'top 20%',
+      toggleActions: 'play none none reverse'
     }
+  });
 
-    async function loadDarkVessels(scenarioId) {
-      try {
-        darkVesselGroup.clearLayers();
-        const res = await fetch(`/api/dark_vessels/${scenarioId}`);
-        if (!res.ok) return;
-        const intel = await res.json();
+  elements.forEach((el, i) => {
+    tl.to(el, { opacity: 1, y: 0, duration: 0.55, ease: 'power3.out' }, i * 0.08);
+  });
 
-        intel.targets.forEach(t => {
-          if (t.is_dark_vessel) {
-            // Blinking Dark Vessel Marker
-            const darkMarker = L.circleMarker([t.lat, t.lng], {
-              radius: 10,
-              color: '#EF4444',
-              fillColor: '#991B1B',
-              fillOpacity: 0.9,
-              weight: 3,
-              className: 'pulse-glow-red'
-            }).bindPopup(`
-              <div class="font-mono text-xs p-1">
-                <b class="text-rose-400">🚨 DARK VESSEL DETECTED</b><br>
-                <span class="text-slate-300">Hull Length: ~${t.radar_length_m}m</span><br>
-                <span class="text-amber-300">AIS Status: OFFLINE / SPOOFED</span><br>
-                <span class="text-slate-400">Dist to Spill Origin: ${t.dist_to_spill_origin_km} km</span>
-              </div>
-            `).bindTooltip("🚨 DARK VESSEL (AIS OFFLINE)", {
-              permanent: true,
-              direction: "top",
-              className: "bg-rose-950 text-rose-300 font-mono text-[10px] px-2 py-0.5 rounded border border-rose-700 font-bold"
-            });
-            darkVesselGroup.addLayer(darkMarker);
-          }
-        });
-      } catch (e) {
-        console.error("Dark vessel load error:", e);
-      }
-    }
+  ScrollTrigger.create({
+    trigger: '#' + sectionId,
+    start: 'top 55%',
+    end: 'bottom 45%',
+    onEnter: () => setGlobeSection(sectionNum),
+    onEnterBack: () => setGlobeSection(sectionNum)
+  });
+}
 
-    function renderScenario(data) {
-      // Clear previous layers
-      slickLayerGroup.clearLayers();
-      coneLayerGroup.clearLayers();
-      vesselTracksGroup.clearLayers();
-      vesselMarkersGroup.clearLayers();
-      driftArrowGroup.clearLayers();
-      forwardDriftGroup.clearLayers();
+ScrollTrigger.create({
+  trigger: '#section-1',
+  start: 'top 55%',
+  end: 'bottom 45%',
+  onEnter: () => setGlobeSection(1),
+  onEnterBack: () => setGlobeSection(1)
+});
 
-      // 1. Update Left Sidebar Stats
-      document.getElementById('regionName').textContent = data.region_name;
-      document.getElementById('scenarioDesc').textContent = data.description;
-      document.getElementById('sarSensor').textContent = data.sar_image.satellite;
-      document.getElementById('sarTime').textContent = data.sar_image.acquisition_time.split('T')[1];
+makeContentTrigger('section-2', [
+  '#label-2','#title-2','#desc-2',
+  ...document.querySelectorAll('#cards-2 .input-card'),
+  '#metrics-2'
+], 2);
 
-      const primarySlick = data.slicks[0];
-      if (primarySlick) {
-        document.getElementById('slickArea').textContent = `${primarySlick.area_sqkm.toFixed(2)} km²`;
-        document.getElementById('slickVol').textContent = `${primarySlick.estimated_volume_m3.toFixed(1)} m³`;
-        const confPct = Math.round(primarySlick.confidence_score * 100);
-        document.getElementById('aiConfidenceText').textContent = `${confPct}%`;
-        document.getElementById('aiConfidenceBar').style.width = `${confPct}%`;
+makeContentTrigger('section-3', [
+  '#label-3','#title-3','#desc-3',
+  '#pipeline-3','#features-3','#detection-stat'
+], 3);
 
-        const alertBox = document.getElementById('lookalikeAlert');
-        const statusBadge = document.getElementById('incidentStatusBadge');
+makeContentTrigger('section-4', [
+  '#label-4','#title-4','#desc-4',
+  '#fusion-layout','#risk-stat'
+], 4);
 
-        if (primarySlick.is_lookalike) {
-          alertBox.className = "p-2 rounded-lg text-[10px] font-mono leading-tight bg-amber-950/60 border border-amber-700/60 text-amber-300";
-          alertBox.textContent = `⚠️ ${primarySlick.lookalike_reason}`;
-          statusBadge.className = "px-2 py-0.5 text-[9px] font-mono font-bold rounded-md uppercase bg-amber-950 text-amber-400 border border-amber-800";
-          statusBadge.textContent = "Look-Alike (False Alarm)";
-        } else {
-          alertBox.className = "p-2 rounded-lg text-[10px] font-mono leading-tight bg-rose-950/60 border border-rose-700/60 text-rose-300";
-          alertBox.textContent = `🚨 Confirmed Mineral Oil Spill (SAR Damping: High)`;
-          statusBadge.className = "px-2 py-0.5 text-[9px] font-mono font-bold rounded-md uppercase bg-rose-950 text-rose-400 border border-rose-800";
-          statusBadge.textContent = "Verified Spill";
-        }
-      }
+makeContentTrigger('section-5', [
+  '#label-5','#title-5','#desc-5',
+  ...document.querySelectorAll('#action-cards .action-card'),
+  '#cta-5'
+], 5);
 
-      // Wind & Current
-      document.getElementById('windData').textContent = `${data.environmental.wind_speed_ms.toFixed(1)} m/s @ ${data.environmental.wind_direction_deg}°`;
-      document.getElementById('currentData').textContent = `${data.environmental.current_speed_ms.toFixed(2)} m/s @ ${data.environmental.current_direction_deg}°`;
-      document.getElementById('elapsedDrift').textContent = `${data.drift_origin_cone.properties.elapsed_hours} hrs`;
-      document.getElementById('originCoords').textContent = `${data.drift_origin_cone.properties.origin_lat.toFixed(3)}°N, ${data.drift_origin_cone.properties.origin_lng.toFixed(3)}°E`;
-
-      // 2. Render Slick GeoJSON
-      data.slicks.forEach(slick => {
-        const color = slick.is_lookalike ? '#F59E0B' : '#06B6D4';
-        const geoLayer = L.geoJSON(slick.geojson, {
-          style: {
-            color: color,
-            weight: 3,
-            fillColor: color,
-            fillOpacity: 0.4,
-            dashArray: slick.is_lookalike ? '4, 4' : null
-          }
-        }).bindPopup(`
-          <div class="font-mono text-xs p-1">
-            <b class="text-cyan-400">${slick.id}</b><br>
-            Area: ${slick.area_sqkm} km²<br>
-            Confidence: ${(slick.confidence_score*100).toFixed(1)}%<br>
-            Status: ${slick.is_lookalike ? 'Look-alike' : 'Mineral Oil'}
-          </div>
-        `);
-        slickLayerGroup.addLayer(geoLayer);
-      });
-
-      // 3. Render Reverse Drift Origin Cone
-      const coneGeo = L.geoJSON(data.drift_origin_cone, {
-        style: {
-          color: '#F59E0B',
-          weight: 2,
-          fillColor: '#F59E0B',
-          fillOpacity: 0.2,
-          dashArray: '5, 5'
-        }
-      }).bindPopup(`
-        <div class="font-mono text-xs p-1">
-          <b class="text-amber-400">Estimated Spill Origin Cone</b><br>
-          Backtrack: -${data.drift_origin_cone.properties.elapsed_hours} hrs<br>
-          Uncertainty Radius: ${data.drift_origin_cone.properties.uncertainty_radius_km} km
-        </div>
-      `);
-      coneLayerGroup.addLayer(coneGeo);
-
-      // Center Origin Marker
-      const originLat = data.drift_origin_cone.properties.origin_lat;
-      const originLng = data.drift_origin_cone.properties.origin_lng;
-      const originMarker = L.circleMarker([originLat, originLng], {
-        radius: 7,
-        color: '#F59E0B',
-        fillColor: '#EF4444',
-        fillOpacity: 1.0,
-        weight: 2
-      }).bindTooltip("Estimated Discharge Point", { permanent: true, direction: "top", className: "bg-c2-950 text-amber-300 font-mono text-[10px] px-1.5 py-0.5 rounded border border-amber-700" });
-      coneLayerGroup.addLayer(originMarker);
-
-      // Connect Origin to Slick Centroid with Drift Vector Arrow
-      if (primarySlick) {
-        const driftLine = L.polyline([
-          [originLat, originLng],
-          [primarySlick.centroid.lat, primarySlick.centroid.lng]
-        ], {
-          color: '#A855F7',
-          weight: 2.5,
-          dashArray: '3, 6'
-        });
-        driftArrowGroup.addLayer(driftLine);
-      }
-
-      // 4. Render Vessel Trajectories
-      data.vessels.forEach(vessel => {
-        const culpritMatch = data.culprits.find(c => c.mmsi === vessel.metadata.mmsi);
-        let trackColor = '#64748B'; // Cleared
-        if (culpritMatch) {
-          if (culpritMatch.verdict === 'PRIMARY SUSPECT') trackColor = '#EF4444';
-          else if (culpritMatch.verdict === 'POTENTIAL CONTRIBUTOR') trackColor = '#F59E0B';
-        }
-
-        const latlngs = vessel.positions.map(p => [p.lat, p.lng]);
-        const trackPolyline = L.polyline(latlngs, {
-          color: trackColor,
-          weight: culpritMatch?.verdict === 'PRIMARY SUSPECT' ? 3.5 : 2.0,
-          opacity: 0.85
-        }).addTo(vesselTracksGroup);
-
-        // Vessel Icon at latest position
-        const latestPos = vessel.positions[vessel.positions.length - 1];
-        const shipMarker = L.circleMarker([latestPos.lat, latestPos.lng], {
-          radius: culpritMatch?.verdict === 'PRIMARY SUSPECT' ? 8 : 5,
-          color: trackColor,
-          fillColor: trackColor,
-          fillOpacity: 0.9,
-          weight: 2
-        }).bindTooltip(`<b>${vessel.metadata.name}</b> (${vessel.metadata.ship_type})`, {
-          permanent: false,
-          direction: "right",
-          className: "bg-c2-950 text-slate-200 font-mono text-xs px-2 py-1 rounded border border-c2-750"
-        });
-        vesselMarkersGroup.addLayer(shipMarker);
-      });
-
-      // 5. Populate Culprit Leaderboard
-      const listContainer = document.getElementById('culpritList');
-      listContainer.innerHTML = '';
-      document.getElementById('vesselCountBadge').textContent = `${data.culprits.length} Vessels Evaluated`;
-
-      data.culprits.forEach(c => {
-        const isPrimary = c.verdict === 'PRIMARY SUSPECT';
-        const isPotential = c.verdict === 'POTENTIAL CONTRIBUTOR';
-        const badgeColor = isPrimary ? 'bg-rose-950 text-rose-400 border-rose-800' : isPotential ? 'bg-amber-950 text-amber-400 border-amber-800' : 'bg-slate-800 text-slate-400 border-slate-700';
-
-        const card = document.createElement('div');
-        card.className = `p-3 rounded-xl border transition-all cursor-pointer ${isPrimary ? 'bg-rose-950/30 border-rose-700/80 shadow-lg shadow-rose-950/40' : 'bg-c2-950/60 border-c2-800 hover:border-c2-700'}`;
-        card.innerHTML = `
-          <div class="flex items-center justify-between mb-1.5">
-            <div class="flex items-center space-x-1.5">
-              <span class="font-mono text-xs font-bold text-slate-400">#${c.rank}</span>
-              <span class="font-bold text-sm text-white">${c.vessel_name}</span>
-            </div>
-            <span class="px-2 py-0.5 text-[9px] font-mono font-bold rounded-md uppercase border ${badgeColor}">${c.verdict}</span>
-          </div>
-
-          <div class="text-[11px] font-mono text-slate-400 flex justify-between mb-2">
-            <span>${c.ship_type}</span>
-            <span class="text-slate-300">MMSI: ${c.mmsi}</span>
-          </div>
-
-          <div class="space-y-1 mb-2.5">
-            <div class="flex justify-between items-center text-[10px] font-mono">
-              <span class="text-slate-400">Attribution Probability:</span>
-              <span class="font-extrabold ${isPrimary ? 'text-rose-400 text-xs glow-text-rose' : 'text-slate-300'}">${c.composite_score}%</span>
-            </div>
-            <div class="w-full h-1.5 bg-c2-950 rounded-full overflow-hidden border border-c2-800">
-              <div class="h-full ${isPrimary ? 'bg-gradient-to-r from-rose-500 to-red-500' : isPotential ? 'bg-amber-400' : 'bg-slate-500'} rounded-full" style="width: ${c.composite_score}%"></div>
-            </div>
-          </div>
-
-          <div class="grid grid-cols-3 gap-1 text-[9px] font-mono text-center bg-c2-900/80 p-1.5 rounded-lg border border-c2-800">
-            <div>
-              <div class="text-slate-500">CPA DIST</div>
-              <div class="font-bold text-slate-200">${c.closest_approach_distance_km} km</div>
-            </div>
-            <div>
-              <div class="text-slate-500">SPEED ANOMALY</div>
-              <div class="font-bold ${c.speed_anomaly_score >= 80 ? 'text-amber-400' : 'text-slate-200'}">${c.speed_anomaly_score}%</div>
-            </div>
-            <div>
-              <div class="text-slate-500">ALIGNMENT</div>
-              <div class="font-bold text-slate-200">${c.alignment_score}%</div>
-            </div>
-          </div>
-        `;
-        listContainer.appendChild(card);
-      });
-
-      // Fit map to scenario bounds
-      const bounds = L.latLngBounds(data.sar_image.bounds);
-      map.fitBounds(bounds, { padding: [40, 40] });
-      lucide.createIcons();
-    }
-
-    // 72h Forward Drift & Landfall Impact Trigger
-    const landfallModal = document.getElementById('landfallModal');
-    document.getElementById('btnForwardDrift').addEventListener('click', async () => {
-      if (!currentScenarioData) return;
-      const btn = document.getElementById('btnForwardDrift');
-      const origText = btn.innerHTML;
-      btn.innerHTML = `<i data-lucide="loader" class="w-4 h-4 animate-spin"></i><span>Simulating 72h...</span>`;
-      lucide.createIcons();
-
-      try {
-        const res = await fetch(`/api/forward_drift/${currentScenarioData.id}`);
-        if (!res.ok) throw new Error("Failed to fetch forward forecast");
-        const forecast = await res.json();
-
-        // Clear previous forward drift layers
-        forwardDriftGroup.clearLayers();
-
-        // 1. Draw Forward 72h Trajectory Path
-        const pts = forecast.trajectory_72h.map(p => [p.lat, p.lng]);
-        const forwardLine = L.polyline(pts, {
-          color: '#D946EF',
-          weight: 3.5,
-          dashArray: '6, 6',
-          opacity: 0.95
-        }).addTo(forwardDriftGroup);
-
-        // 2. Add Coastal Landfall Impact Marker
-        const impact = forecast.landfall_impact;
-        if (impact) {
-          const impactMarker = L.circleMarker([impact.impact_lat, impact.impact_lng], {
-            radius: 12,
-            color: '#EC4899',
-            fillColor: '#BE185D',
-            fillOpacity: 0.9,
-            weight: 3,
-            className: 'pulse-glow-purple'
-          }).bindPopup(`
-            <div class="font-mono text-xs p-1">
-              <b class="text-pink-400">🚨 PROJECTED COASTAL IMPACT</b><br>
-              <b>Site:</b> ${impact.target_name}<br>
-              <b>ETA:</b> <span class="text-rose-400 font-bold">${impact.eta_hours} hrs</span> (${impact.impact_timestamp})<br>
-              <b>Booms Required:</b> ${forecast.containment_plan.containment_booms_recommended_m} meters
-            </div>
-          `).bindTooltip(`🚨 LANDFALL ETA: ${impact.eta_hours}h (${impact.target_name})`, {
-            permanent: true,
-            direction: "top",
-            className: "bg-purple-950 text-pink-300 font-mono text-[10px] px-2 py-0.5 rounded border border-purple-700 font-bold"
-          });
-          forwardDriftGroup.addLayer(impactMarker);
-
-          // Populate Landfall Modal
-          document.getElementById('landfallTargetText').textContent = `Target: ${impact.target_name} (${impact.target_type})`;
-          document.getElementById('landfallEtaText').textContent = `${impact.eta_hours} Hours`;
-        }
-
-        // 3. Populate Weathering Stats (at 24h)
-        const w24 = forecast.weathering_timeline.find(w => w.elapsed_hours === 24) || forecast.weathering_timeline[forecast.weathering_timeline.length - 1];
-        document.getElementById('wEvapPct').textContent = `${w24.evaporated_pct}%`;
-        document.getElementById('wEmulsionPct').textContent = `${w24.emulsified_water_pct}%`;
-        document.getElementById('wEmulsifiedVol').textContent = `${w24.current_emulsified_volume_m3} m³`;
-        document.getElementById('wViscosity').textContent = `${w24.dynamic_viscosity_cp.toLocaleString()} cP`;
-
-        // Containment plan
-        document.getElementById('cBooms').textContent = `${forecast.containment_plan.containment_booms_recommended_m} meters of Offshore Inflatable Booms`;
-        document.getElementById('cDispersants').textContent = forecast.containment_plan.chemical_dispersant_status;
-
-        // Show Modal & fit map bounds
-        landfallModal.classList.remove('hidden');
-        map.fitBounds(forwardLine.getBounds(), { padding: [50, 50] });
-
-      } catch (err) {
-        alert("Forward drift error: " + err);
-      } finally {
-        btn.innerHTML = origText;
-        lucide.createIcons();
+// ─── NUMERICAL COUNTER ANIMATIONS ───
+function animateCounters(containerSelector) {
+  const counters = document.querySelectorAll(containerSelector + ' .counter');
+  counters.forEach(c => {
+    const target = parseInt(c.dataset.target, 10);
+    const suffix = c.dataset.suffix || '';
+    if (isNaN(target)) return;
+    
+    gsap.fromTo(c, { innerText: 0 }, {
+      innerText: target,
+      duration: 1.5,
+      ease: 'power2.out',
+      snap: { innerText: 1 },
+      onUpdate: function() {
+        c.innerText = Math.round(c.innerText) + suffix;
       }
     });
+  });
+}
 
-    document.getElementById('btnCloseLandfall').addEventListener('click', () => {
-      landfallModal.classList.add('hidden');
-    });
+// ─── DOT NAVIGATION ───
+document.querySelectorAll('.dot-item').forEach(dot => {
+  dot.addEventListener('click', () => {
+    const n = parseInt(dot.dataset.section);
+    document.getElementById('section-' + n)?.scrollIntoView({ behavior: 'smooth' });
+  });
+});
 
-    // GeoTIFF & CFAR Analysis Trigger
-    document.getElementById('btnGeoTIFF').addEventListener('click', async () => {
-      const btn = document.getElementById('btnGeoTIFF');
-      const originalHTML = btn.innerHTML;
-      btn.innerHTML = `<i data-lucide="loader" class="w-4 h-4 animate-spin"></i><span>Processing SAR...</span>`;
-      lucide.createIcons();
+// ─── INTERACTIVE HOVER TOOLTIPS ON VESSELS & SATELLITE ───
+const tooltip = document.getElementById('vessel-tooltip');
+const wrapper = document.getElementById('globe-svg-wrapper');
 
-      try {
-        const res = await fetch('/api/process_synthetic_geotiff', { method: 'POST' });
-        const result = await res.json();
-        
-        // Render generated polygons on map
-        result.polygons.forEach((polyCoords, i) => {
-          const geoJsonFeature = {
-            "type": "Feature",
-            "geometry": { "type": "Polygon", "coordinates": [polyCoords] },
-            "properties": {}
-          };
-          const layer = L.geoJSON(geoJsonFeature, {
-            style: { color: '#06B6D4', weight: 3, fillColor: '#06B6D4', fillOpacity: 0.4 }
-          }).bindPopup(`<b>Real-Time PyTorch U-Net Segment</b><br>Polygon #${i+1}`).addTo(slickLayerGroup);
-        });
+document.querySelectorAll('.vessel-target').forEach(el => {
+  el.addEventListener('mouseenter', (e) => {
+    const name = el.dataset.name || 'Vessel';
+    const info = el.dataset.info || '';
+    tooltip.innerHTML = `<b>${name}</b><br><span style="color:#60A5FA;">${info}</span>`;
+    tooltip.style.opacity = '1';
+  });
 
-        // Render CFAR ships
-        result.radar_ships.forEach(s => {
-          L.circleMarker([s.lat, s.lng], {
-            radius: 8,
-            color: '#10B981',
-            fillColor: '#059669',
-            fillOpacity: 0.9,
-            weight: 2
-          }).bindPopup(`<b>CFAR Radar Spotter:</b> ${s.id}<br>Length: ~${s.estimated_length_m}m<br>SNR: ${s.cfar_snr_db} dB`).addTo(vesselMarkersGroup);
-        });
+  el.addEventListener('mousemove', (e) => {
+    const rect = wrapper.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    tooltip.style.left = x + 'px';
+    tooltip.style.top = y + 'px';
+  });
 
-        alert(`✅ SAR Pipeline Complete!\n\n1. Ingested 16-bit GeoTIFF (512x512)\n2. Applied 5x5 Adaptive Lee Filter\n3. Inferred PyTorch U-Net Segmentation (${result.polygons_detected_count} Slicks Vectorized)\n4. Ran 2D CA-CFAR Radar Detector (${result.radar_ships_detected_count} Radar Ships Identified)`);
-      } catch (err) {
-        alert("Error running GeoTIFF pipeline: " + err);
-      } finally {
-        btn.innerHTML = originalHTML;
-        lucide.createIcons();
-      }
-    });
+  el.addEventListener('mouseleave', () => {
+    tooltip.style.opacity = '0';
+  });
+});
 
-    // Scenario Dropdown Change
-    document.getElementById('scenarioSelect').addEventListener('change', (e) => {
-      loadScenario(e.target.value);
-    });
+// ─── INTERACTIVE SAR SPLIT-SCREEN WIPE LENS DRAGGING ───
+const sarLens = document.getElementById('sarLens');
+const sarAfter = document.getElementById('sarAfter');
+const sarDivider = document.getElementById('sarDivider');
+let isDraggingLens = false;
 
-    // Forensic Dossier Modal
-    const dossierModal = document.getElementById('dossierModal');
-    document.getElementById('btnDossier').addEventListener('click', async () => {
-      if (!currentScenarioData) return;
-      const res = await fetch(`/api/dossier/${currentScenarioData.id}/markdown`);
-      const mdText = await res.text();
-      document.getElementById('dossierMarkdownContent').textContent = mdText;
-      dossierModal.classList.remove('hidden');
-    });
+function updateLens(clientX) {
+  const rect = sarLens.getBoundingClientRect();
+  let x = clientX - rect.left;
+  x = Math.max(0, Math.min(x, rect.width));
+  const pct = (x / rect.width) * 100;
+  sarAfter.style.clipPath = `polygon(0 0, ${pct}% 0, ${pct}% 100%, 0 100%)`;
+  sarDivider.style.left = pct + '%';
+}
 
-    document.getElementById('btnCloseDossier').addEventListener('click', () => {
-      dossierModal.classList.add('hidden');
-    });
+sarLens.addEventListener('mousedown', (e) => {
+  isDraggingLens = true;
+  updateLens(e.clientX);
+});
 
-    // Drift Timeline Playback Simulation
-    const timeSlider = document.getElementById('timeSlider');
-    const playBtn = document.getElementById('btnPlayDrift');
-    const playIcon = document.getElementById('playIcon');
-    const currentTimeLabel = document.getElementById('currentTimeLabel');
+window.addEventListener('mousemove', (e) => {
+  if (!isDraggingLens) return;
+  updateLens(e.clientX);
+});
 
-    playBtn.addEventListener('click', () => {
-      isPlaying = !isPlaying;
-      if (isPlaying) {
-        playIcon.setAttribute('data-lucide', 'pause');
-        playInterval = setInterval(() => {
-          let val = parseInt(timeSlider.value);
-          val = (val + 2) % 102;
-          timeSlider.value = val;
-          updateSliderTime(val);
-        }, 100);
-      } else {
-        clearInterval(playInterval);
-        playIcon.setAttribute('data-lucide', 'play');
-      }
-      lucide.createIcons();
-    });
+window.addEventListener('mouseup', () => {
+  isDraggingLens = false;
+});
 
-    timeSlider.addEventListener('input', (e) => {
-      updateSliderTime(parseInt(e.target.value));
-    });
+sarLens.addEventListener('touchmove', (e) => {
+  if (e.touches.length > 0) updateLens(e.touches[0].clientX);
+}, { passive: true });
 
-    function updateSliderTime(val) {
-      if (!currentScenarioData) return;
-      const elapsed = currentScenarioData.drift_origin_cone.properties.elapsed_hours;
-      const currentDriftHour = ((val / 100) * elapsed).toFixed(1);
-      currentTimeLabel.textContent = `T + ${currentDriftHour} hrs drift (Scrubber ${val}%)`;
-    }
-
-    // Initial Load
-    loadScenario('scenario_alpha_rogue_tanker');
-  </script>
+// ─── MOUSE GYROSCOPIC PARALLAX ───
+document.addEventListener('mousemove', (e) => {
+  const xPct = (e.clientX / window.innerWidth - 0.5) * 12;
+  const yPct = (e.clientY / window.innerHeight - 0.5) * 8;
+  gsap.to('#globe-svg-wrapper', {
+    x: xPct,
+    y: yPct - 6,
+    duration: 1.4,
+    ease: 'power2.out',
+    overwrite: 'auto'
+  });
+});
+</script>
 </body>
 </html>
